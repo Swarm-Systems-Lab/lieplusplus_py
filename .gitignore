@@ -1,3 +1,4 @@
+## C-specific ignores
 # Prerequisites
 *.d
 
@@ -39,3 +40,35 @@
 
 # debug information files
 *.dwo
+
+## Python-specific ignores
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# Development tools
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.vscode/
+.idea/
+
+# External dependencies
+external/
+
+# Temporary files
+*.tmp
+*.temp
+*~
+.DS_Store
+
+## Others
+/tmp
+/otuput

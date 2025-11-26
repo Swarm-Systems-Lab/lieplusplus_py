@@ -1,0 +1,50 @@
+[project]
+name = "lieplusplus-py"
+version = "0.1.0"
+description = "Python bindings for the Lie++ C++ library"
+readme = "README.md"
+requires-python = ">=3.8"
+license = "GPL-3.0-or-later"
+authors = [
+    { name="Jesús Bautista Villar", email="jesbauti20@gmail.com" }
+]
+
+# Required dependencies
+dependencies = [
+    "numpy>=1.19.0",
+]
+
+# Optional dependencies
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "pytest-cov",
+    "black",
+    "isort",
+    "mypy",
+    "pre-commit"
+]
+examples = [
+    "matplotlib",
+    "jupyter"
+]
+
+[build-system]
+requires = [
+    "setuptools>=64",
+    "wheel", 
+    "pybind11>=2.6.0",
+    "pybind11[global]"
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["lieplusplus"]
+
+[tool.setuptools.package-dir]
+lieplusplus = "src/lieplusplus"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"
