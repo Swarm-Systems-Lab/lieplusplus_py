@@ -72,14 +72,14 @@ def se23_example():
     print("\n\n=== SE_2(3) Extended Pose Group Example ===")
     
     # Create identity extended pose
-    X_identity = lpp.SE23()
+    X_identity = lpp.SE3_2()
     print(f"Identity extended pose matrix:\n{X_identity.asMatrix()}")
     
     # Create extended pose with velocity and position
     R = lpp.SO3()  # identity rotation
     v = np.array([0.1, 0.1, 0.3])  # velocity
     p = np.array([1.0, 2.0, 3.0])  # position
-    X = lpp.SE23(R, [v, p])
+    X = lpp.SE3_2(R, [v, p])
     
     print(f"\nExtended pose from R, v, p:")
     print(f"Extended pose matrix:\n{X.asMatrix()}")
@@ -89,7 +89,7 @@ def se23_example():
     
     # Random extended pose via exponential map
     xi = np.random.randn(9)  # 9-dimensional tangent space
-    X_random = lpp.SE23.exp(xi)
+    X_random = lpp.SE3_2.exp(xi)
     print(f"\nRandom extended pose from exp(xi):")
     print(f"xi: {xi}")
     print(f"X matrix:\n{X_random.asMatrix()}")
@@ -99,7 +99,7 @@ def se23_example():
     print(f"\nComposed extended pose matrix:\n{X_composed.asMatrix()}")
     
     # Test exp/log consistency
-    xi_recovered = lpp.SE23.log(X_random)
+    xi_recovered = lpp.SE3_2.log(X_random)
     print(f"\nOriginal xi: {xi}")
     print(f"Recovered xi: {xi_recovered}")
     print(f"Difference: {np.linalg.norm(xi - xi_recovered)}")
@@ -120,7 +120,7 @@ def adjoint_example():
     print(f"\nSE(3) Adjoint matrix:\n{Ad_T}")
     
     # SE_2(3) Adjoint
-    X = lpp.SE23.random()
+    X = lpp.SE3_2.random()
     Ad_X = X.Adjoint()
     print(f"\nSE_2(3) Adjoint matrix:\n{Ad_X}")
 
@@ -131,7 +131,7 @@ if __name__ == "__main__":
     
     so3_example()
     se3_example() 
-    se23_example()
+    SE3_2_example()
     adjoint_example()
     
     print("\n\nExample completed successfully!")

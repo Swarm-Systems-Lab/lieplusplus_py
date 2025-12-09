@@ -10,229 +10,381 @@
 #include <groups/SEn3.hpp>
 
 namespace py = pybind11;
-using Eigen::Matrix3d;
-using Eigen::Matrix4d;
-using Eigen::Vector3d;
-using Eigen::Vector4d;
-using Eigen::Quaterniond;
 
-// using group::SO3; // template; we'll instantiate SO3<double>
-
-namespace py = pybind11;
-using namespace group;
+// Abstract base class for all Lie groups
+class LieGroup {
+public:
+    virtual ~LieGroup() = default;
+};
 
 PYBIND11_MODULE(_core, m) {
     m.doc() = "Python bindings for Lie++ library";
 
+    // Eigen double types alias
+    using Eigen::Matrix3d;
+    using Eigen::Matrix4d;
+    using Eigen::Quaterniond;
+    using Vec3d = Eigen::Matrix<double, 3, 1>;
+    using Vec4d = Eigen::Matrix<double, 4, 1>;
+    using Vec6d = Eigen::Matrix<double, 6, 1>;
+    using Vec9d = Eigen::Matrix<double, 9, 1>;
+
+    using namespace group;
+    using SO3d = SO3<double>;       // double precision SO(3)
+    using SE3d = SEn3<double, 1>;   // double precision SE(3) with 1 translation
+    using SE3d_2 = SEn3<double, 2>; // double precision SE_2(3) with 2 translations
+
+    // ---------------------------------------------------------------------------
+    // LieGroup base class (for documentation purposes)
+    py::class_<LieGroup>(m, "LieGroup")
+        .doc() = R"(
+            LieGroup - Abstract base class for all Lie groups
+            
+            All Lie groups should implement the following methods:
+            - exp(): Exponential map from Lie algebra to Lie group
+            - log(): Logarithmic map from Lie group to Lie algebra
+            - wedge(): Wedge operator from R^n to Lie algebra
+            - vee(): Vee operator from Lie algebra to R^n
+            - adjoint(): Adjoint operator
+            - random(): Generate a random group element
+            - tangent_zero(): Zero element of the Lie algebra
+            - __mul__(): Group composition
+            - __call__(): Convert to matrix representation
+        )";
+    
+    // ---------------------------------------------------------------------------
     // SO(3) - 3D Rotation Group
-    py::class_<SO3<double>>(m, "SO3")
+    py::class_<SO3d>(m, "SO3")
+
+        // ---------------------------------------------------------------------
         // Constructors
+        // ---------------------------------------------------------------------
         .def(py::init<>(), "Default constructor (identity rotation)")
         .def(py::init<const Quaterniond&>(), "Constructor from quaternion", py::arg("q"))
         .def(py::init<const Matrix3d&>(), "Constructor from rotation matrix", py::arg("R"))
-        .def(py::init<const Vector3d&, const Vector3d&>(),
-             "Constructor from two vectors u, v such that R * u = v",
-             py::arg("u"), py::arg("v"))
+        .def(py::init([](const Vec3d& u) {
+            return SO3d::exp(u);
+        }), "Constructor from rotation vector (exponential map)", py::arg("u"))
+        .def(py::init<const Vec3d&, const Vec3d&>(),
+            "Constructor from two vectors u, v such that R * u = v",
+            py::arg("u"), py::arg("v"))
 
-        // Static methods (return copies)
-        .def_static("wedge", &SO3<double>::wedge,
-                    "Wedge operator: R^3 -> so(3). Returns 3x3 matrix.", py::arg("u"),
-                    py::return_value_policy::copy)
-        .def_static("vee", &SO3<double>::vee,
-                    "Vee operator: so(3) -> R^3. Returns 3-vector.", py::arg("U"),
-                    py::return_value_policy::copy)
-        .def_static("adjoint", &SO3<double>::adjoint,
-                    "Adjoint operator for so(3). Returns 3x3 matrix.", py::arg("u"),
-                    py::return_value_policy::copy)
-        .def_static("Gamma2", &SO3<double>::Gamma2,
-                    "Gamma2 matrix for SO3. Returns 3x3 matrix.", py::arg("u"),
-                    py::return_value_policy::copy)
-        .def_static("leftJacobian", &SO3<double>::leftJacobian,
-                    "Left Jacobian of SO3. Returns 3x3 matrix.", py::arg("u"),
-                    py::return_value_policy::copy)
-        .def_static("invLeftJacobian", &SO3<double>::invLeftJacobian,
-                    "Inverse Left Jacobian of SO3. Returns 3x3 matrix.", py::arg("u"),
-                    py::return_value_policy::copy)
-        .def_static("rightJacobian", &SO3<double>::rightJacobian,
-                    "Right Jacobian (calls leftJacobian(-u)). Returns 3x3 matrix.", py::arg("u"),
-                    py::return_value_policy::copy)
-        .def_static("invRightJacobian", &SO3<double>::invRightJacobian,
-                    "Inverse Right Jacobian. Returns 3x3 matrix.", py::arg("u"),
-                    py::return_value_policy::copy)
+        // ---------------------------------------------------------------------
+        // Static methods
+        // ---------------------------------------------------------------------
+        .def_static("exp", &SO3d::exp, "Exponential map R^3 -> SO(3).", py::arg("u"))
+        .def_static("log", &SO3d::log, "Logarithmic map SO(3) -> R^3.", py::arg("X"))
+        .def_static("wedge", &SO3d::wedge, "Wedge operator R^3 -> so(3). Returns a 3x3 matrix.", py::arg("u"))
+        .def_static("vee", &SO3d::vee, "Vee operator so(3) -> R^3. Returns a 3-vector.", py::arg("U"))
+        .def_static("adjoint", &SO3d::adjoint, "Adjoint operator for so(3). Returns a 3x3 matrix.", py::arg("u"))
+
         .def_static("random", []() {
-                        Quaterniond q = Quaterniond::UnitRandom(); // random unit quaternion
-                        return SO3<double>(q);
-                    }, "Generate a random SO3 rotation")
+                return SO3d(Quaterniond::UnitRandom());
+            },
+            "Generate a random SO(3) rotation.")
 
-        // Exponential / Log maps
-        .def_static("exp", &SO3<double>::exp,
-                    "Exponential map: R^3 (so3) -> SO3. Accepts 3-vector.", py::arg("u"),
-                    py::return_value_policy::copy)
-        .def_static("log", &SO3<double>::log,
-                    "Logarithmic map: SO3 -> R^3 (so3). Accepts SO3 instance.", py::arg("X"),
-                    py::return_value_policy::copy)
+        .def_static("tangent_zero", []() {
+                return Vec3d::Zero();
+            }, "Zero element of so(3).",
+            py::return_value_policy::copy)
 
-        // Instance accessors (return copies to be safe)
-        .def("asMatrix", &SO3<double>::asMatrix,
-             "Return rotation as 3x3 matrix.", py::return_value_policy::copy)
-        .def("R", &SO3<double>::R,
-             "Return rotation matrix (3x3).", py::return_value_policy::copy)
-        // .def("q", &SO3<double>::q,
-        //      "Return quaternion as [w, x, y, z].", py::return_value_policy::copy)
-        .def("q", [](const SO3<double>& self) {
-            const auto& q = self.q();
-            Vector4d v;
-            v << q.w(), q.x(), q.y(), q.z();
-            return v;
-        }, "Return quaternion as [w, x, y, z]")
-        .def("inv", &SO3<double>::inv,
-             "Return inverse rotation (SO3).", py::return_value_policy::copy)
-        .def("Adjoint", &SO3<double>::Adjoint,
-             "Return Adjoint matrix (3x3).", py::return_value_policy::copy)
-        .def("invAdjoint", &SO3<double>::invAdjoint,
-             "Return inverse Adjoint (3x3).", py::return_value_policy::copy)
+        .def_static("leftJacobian", &SO3d::leftJacobian, 
+                    "Left Jacobian of SO(3). Returns a 3x3 matrix.", 
+                    py::arg("u"))
+        .def_static("invLeftJacobian", &SO3d::invLeftJacobian,
+                    "Inverse Left Jacobian of SO(3). Returns a 3x3 matrix.",
+                    py::arg("u"))
+        .def_static("rightJacobian", &SO3d::rightJacobian,
+                    "Right Jacobian (leftJacobian(-u)). Returns a 3x3 matrix.",
+                    py::arg("u"))
+        .def_static("invRightJacobian", &SO3d::invRightJacobian,
+                    "Inverse Right Jacobian. Returns a 3x3 matrix.",
+                    py::arg("u"))
+        .def_static("Gamma2", &SO3d::Gamma2, 
+                    "Gamma2 matrix for SO(3).", 
+                    py::arg("u"))
 
-        // Mutating methods
-        .def("multiplyRight", &SO3<double>::multiplyRight,
-             "In-place multiplication: this = this * other. Returns self.", py::arg("other"),
+        // ---------------------------------------------------------------------
+        // Instance accessors (return copies)
+        // ---------------------------------------------------------------------
+        .def("asMatrix", &SO3d::asMatrix,
+             "Return the rotation as a 3x3 matrix.",
+             py::return_value_policy::copy)
+
+        .def("R", &SO3d::R,
+             "Return the rotation matrix (3x3).",
+             py::return_value_policy::copy)
+
+        .def("q",
+            [](const SO3d& self) {
+                const auto& q = self.q();
+                return Vec4d{q.w(), q.x(), q.y(), q.z()};
+            },
+            "Return quaternion as [w, x, y, z].")
+
+        .def("inv", &SO3d::inv,
+             "Return the inverse rotation (SO(3)).",
+             py::return_value_policy::copy)
+
+        .def("Adjoint", &SO3d::Adjoint,
+             "Return the Adjoint matrix (3x3).",
+             py::return_value_policy::copy)
+
+        .def("invAdjoint", &SO3d::invAdjoint,
+             "Return the inverse Adjoint matrix (3x3).",
+             py::return_value_policy::copy)
+
+        // ---------------------------------------------------------------------
+        // Mutating methods (operate in-place)
+        // ---------------------------------------------------------------------
+        .def("multiplyRight", &SO3d::multiplyRight,
+             "In-place multiplication: self = self * other. Returns self.",
+             py::arg("other"),
              py::return_value_policy::reference_internal)
-        .def("multiplyLeft", &SO3<double>::multiplyLeft,
-             "In-place multiplication: this = other * this. Returns self.", py::arg("other"),
-             py::return_value_policy::reference_internal)
-        .def("fromq", &SO3<double>::fromq,
-             "Set this rotation from quaternion (normalized).", py::arg("q"),
-             py::return_value_policy::reference_internal)
-        .def("fromR", &SO3<double>::fromR,
-             "Set this rotation from rotation matrix.", py::arg("R"),
+
+        .def("multiplyLeft", &SO3d::multiplyLeft,
+             "In-place multiplication: self = other * self. Returns self.",
+             py::arg("other"),
              py::return_value_policy::reference_internal)
 
-        // Operators: multiplication
-        // SO3 * SO3 -> SO3
-        .def("__mul__", [](const SO3<double>& a, const SO3<double>& b) {
-             return a * b;
-         }, "Compose with another SO3", py::arg("other"))
+        .def("fromq", &SO3d::fromq,
+             "Set this rotation from a (normalized) quaternion.",
+             py::arg("q"),
+             py::return_value_policy::reference_internal)
 
-        // SO3 * Matrix3d -> Matrix3d
-        .def("__mul__", [](const SO3<double>& a, const Matrix3d& M) {
-             return a * M;
-         }, "Apply rotation to a 3x3 matrix (or compose with matrix)", py::arg("matrix"))
+        .def("fromR", &SO3d::fromR,
+             "Set this rotation from a rotation matrix.",
+             py::arg("R"),
+             py::return_value_policy::reference_internal)
 
-        // SO3 * Vector3d -> Vector3d
-        .def("__mul__", [](const SO3<double>& a, const Vector3d& v) {
-             return a * v;
-         }, "Rotate a 3-vector", py::arg("vector"),
-         py::return_value_policy::copy)
+        // ---------------------------------------------------------------------
+        // Operator overloads
+        // ---------------------------------------------------------------------
+        .def("__mul__",
+            [](const SO3d& a, const SO3d& b) {
+                return a * b;
+            },
+            "Compose with another SO3.",
+            py::arg("other"))
 
-        // Rich representation
-        .def("__repr__", [](const SO3<double>& self) {
-             std::ostringstream oss;
-             const auto q = self.q();
-             const auto R = self.R();
-             oss << "<SO3 q=[" << std::setprecision(6) << q.w() << ", "
-                 << q.x() << ", " << q.y() << ", " << q.z() << "]"
-                 << " trace=" << (R.trace()) << ">";
-             return oss.str();
-         });
+        .def("__mul__",
+            [](const SO3d& a, const Matrix3d& M) {
+                return a * M;
+            },
+            "Apply rotation to a 3x3 matrix.",
+            py::arg("matrix"))
 
+        .def("__mul__",
+            [](const SO3d& a, const Vec3d& v) {
+                return a * v;
+            },
+            "Rotate a 3-vector.",
+            py::arg("vector"),
+            py::return_value_policy::copy)
+        
+        .def("__mul__",
+            [](const SO3d& a, const Eigen::Matrix<double, 3, Eigen::Dynamic>& vectors) {
+                Eigen::Matrix<double, 3, Eigen::Dynamic> result(3, vectors.cols());
+                for (int i = 0; i < vectors.cols(); ++i) {
+                    result.col(i) = a * vectors.col(i).eval();
+                }
+                return result;
+            },
+            "Apply rotation to an array of 3-vectors (3xN matrix).",
+            py::arg("vectors"),
+            py::return_value_policy::copy)
+        
+        // ---------------------------------------------------------------------
+        // __call__ -> asMatrix
+        // ---------------------------------------------------------------------
+        .def("__call__", &SO3d::asMatrix,
+             "Call operator to get the rotation matrix (3x3).",
+             py::return_value_policy::copy)
+             
+        // ---------------------------------------------------------------------
+        // __repr__
+        // ---------------------------------------------------------------------
+        .def("__repr__", [](const SO3d& self) {
+            Eigen::IOFormat fmt(6, 0, ", ", "\n", "  ", "");
+            std::ostringstream oss;
+            const auto q = self.q();
+            const auto R = self.R();
+            const auto log_map = self.log(R);
+            oss << "<SO3 R=[\n"
+                << R.format(fmt)
+                << "\n]" << ", R_log=["<< log_map.transpose() << "]" << ", trace=" << R.trace() << ">";
+            return oss.str();
+            }
+        );
+
+    // ---------------------------------------------------------------------------
     // SE(3) - Special Euclidean Group (pose: rotation + translation)
-    py::class_<SEn3<double, 1>>(m, "SE3")
+    py::class_<SE3d>(m, "SE3")
+
+        // ---------------------------------------------------------------------
         // Constructors
+        // ---------------------------------------------------------------------
         .def(py::init<>(), "Default constructor (identity pose)")
-        .def(py::init<const SO3<double>&, const std::array<Vector3d, 1>&>(),
+        .def(py::init<const SO3d&, const std::array<Vec3d, 1>&>(),
             "Constructor from rotation and translation array", py::arg("R"), py::arg("t"))
         .def(py::init<const Matrix4d&>(), "Constructor from 4x4 transformation matrix", py::arg("T"))
         // Convenience constructor from single translation vector
-        .def(py::init([](const SO3<double>& R, const Vector3d& t) {
-            std::array<Vector3d, 1> t_array = {t};
-            return SEn3<double, 1>(R, t_array);
+        .def(py::init([](const SO3d& R, const Vec3d& t) {
+            std::array<Vec3d, 1> t_array = {t};
+            return SE3d(R, t_array);
         }), "Constructor from rotation and translation vector", py::arg("R"), py::arg("t"))
+        .def(py::init([](const Matrix3d& R, const Vec3d& t) {
+            SO3d rot(R);
+            std::array<Vec3d, 1> t_array = {t};
+            return SE3d(rot, t_array);
+        }), "Constructor from rotation matrix and translation vector", py::arg("R"), py::arg("t"))
+        .def(py::init([](const Vec3d& u, const Vec3d& t) {
+            SO3d rot = SO3d::exp(u); // build rotation from rotation vector
+            std::array<Vec3d, 1> t_array = {t};
+            return SE3d(rot, t_array);
+        }), "Constructor from rotation vector (exponential map) and translation vector", py::arg("R"), py::arg("t"))
         
+        // ---------------------------------------------------------------------
         // Static methods
-        .def_static("wedge", &SEn3<double, 1>::wedge, "Wedge operator: R6 -> se(3)", py::arg("u"))
-        .def_static("vee", &SEn3<double, 1>::vee, "Vee operator: se(3) -> R6", py::arg("U"))
+        // ---------------------------------------------------------------------
+        .def_static("exp", &SE3d::exp, "Exponential map: se(3) -> SE(3)", py::arg("u"))
+        .def_static("log", &SE3d::log, "Logarithmic map: SE(3) -> se(3)", py::arg("T"))
+        .def_static("wedge", &SE3d::wedge, "Wedge operator: R6 -> se(3)", py::arg("u"))
+        .def_static("vee", &SE3d::vee, "Vee operator: se(3) -> R6", py::arg("U"))
+
         .def_static("random", []() {
             Quaterniond q = Quaterniond::UnitRandom();
-            SO3<double> R(q);                      // random rotation
-            Vector3d t = Vector3d::Random();       // random translation
-            std::array<Vector3d, 1> t_array = {t};
-            return SEn3<double, 1>(R, t_array);
+            SO3d R(q);                      // random rotation
+            Vec3d t = Vec3d::Random();       // random translation
+            std::array<Vec3d, 1> t_array = {t};
+            return SE3d(R, t_array);
         }, "Generate a random SE3 pose (rotation + translation)")
 
-        // Exponential / Log maps
-        .def_static("exp", &SEn3<double, 1>::exp, "Exponential map: se(3) -> SE(3)", py::arg("u"))
-        .def_static("log", &SEn3<double, 1>::log, "Logarithmic map: SE(3) -> se(3)", py::arg("T"))
+        .def_static("tangent_zero", []() {
+                return Vec6d::Zero();
+            }, "Zero element of se(3).",
+            py::return_value_policy::copy)
 
+        // ---------------------------------------------------------------------
         // Instance accessors (return copies)
-        .def("asMatrix", &SEn3<double, 1>::asMatrix, "Return 4x4 transformation matrix", py::return_value_policy::copy)
-        .def("R", &SEn3<double, 1>::R, "Return rotation part", py::return_value_policy::copy)
-        .def("q", [](const SEn3<double, 1>& self) {
+        // ---------------------------------------------------------------------
+        .def("asMatrix", &SE3d::asMatrix, "Return 4x4 transformation matrix", py::return_value_policy::copy)
+        .def("R", &SE3d::R, "Return rotation part", py::return_value_policy::copy)
+        .def("q", [](const SE3d& self) {
             const auto& q = self.q();
-            Vector4d v; v << q.w(), q.x(), q.y(), q.z(); return v;
+            Vec4d v; v << q.w(), q.x(), q.y(), q.z(); return v;
         }, "Return rotation quaternion as [w, x, y, z]")
-        .def("t", &SEn3<double, 1>::t, "Return translation array", py::return_value_policy::copy)
-        .def("translation", [](const SEn3<double, 1>& self){ return self.t()[0]; }, "Return translation vector")
-        .def("inv", &SEn3<double, 1>::inv, "Return inverse pose", py::return_value_policy::copy)
-        .def("Adjoint", &SEn3<double, 1>::Adjoint, "Return Adjoint matrix", py::return_value_policy::copy)
+        .def("t", &SE3d::t, "Return translation array", py::return_value_policy::copy)
+        .def("translation", [](const SE3d& self){ return self.t()[0]; }, "Return translation vector")
+        .def("inv", &SE3d::inv, "Return inverse pose", py::return_value_policy::copy)
+        .def("Adjoint", &SE3d::Adjoint, "Return Adjoint matrix", py::return_value_policy::copy)
 
-        // Operators
-        .def("__mul__", [](const SEn3<double, 1>& a, const SEn3<double, 1>& b){ return a * b; }, "Compose poses", py::arg("other"))
-        .def("__mul__", [](const SEn3<double, 1>& a, const Vector3d& p){ return a * p; }, "Transform point", py::arg("point"), py::return_value_policy::copy)
+        // ---------------------------------------------------------------------
+        // Operator overloads
+        // ---------------------------------------------------------------------
+        .def("__mul__", 
+            [](const SE3d& a, const SE3d& b){
+                return a * b; 
+            }, 
+            "Compose poses", py::arg("other"))
+        .def("__mul__", 
+            [](const SE3d& a, const Vec3d& p){
+                return a * p;
+            }, 
+            "Transform point", py::arg("point"), py::return_value_policy::copy)
 
-        // Representation
-        .def("__repr__", [](const SEn3<double, 1>& self){
-            return "<SE3 pose>";
-    });
+        // ---------------------------------------------------------------------
+        // __call__ -> asMatrix
+        // ---------------------------------------------------------------------
+        .def("__call__", &SE3d::asMatrix,
+             "Call operator to get the pose matrix (4x4).",
+             py::return_value_policy::copy)
+
+        // ---------------------------------------------------------------------
+        // __repr__
+        // ---------------------------------------------------------------------
+        .def("__repr__", [](const SE3d& self){
+            return "<SE3 pose>"; // TODO: improve representation
+        }
+    );
 
 
+    // ---------------------------------------------------------------------------
     // SE_2(3) - Extended Special Euclidean Group (pose + velocity)
-    py::class_<SEn3<double, 2>>(m, "SE23")
+    py::class_<SE3d_2>(m, "SE3_2")
+    
+        // ---------------------------------------------------------------------
         // Constructors
+        // ---------------------------------------------------------------------
         .def(py::init<>(), "Default constructor (identity extended pose)")
-        .def(py::init<const SO3<double>&, const std::array<Vector3d, 2>&>(),
+        .def(py::init<const SO3d&, const std::array<Vec3d, 2>&>(),
             "Constructor from rotation and translation array [velocity, position]", py::arg("R"), py::arg("t"))
-        // Convenience constructor from std::vector<Vector3d>
-        .def(py::init([](const SO3<double>& R, const std::vector<Vector3d>& translations){
+        // Convenience constructor from std::vector<Vec3d>
+        .def(py::init([](const SO3d& R, const std::vector<Vec3d>& translations){
             if(translations.size() != 2) throw std::invalid_argument("Expected exactly 2 translation vectors [velocity, position]");
-            std::array<Vector3d,2> t_array = {translations[0], translations[1]};
-            return SEn3<double, 2>(R, t_array);
+            std::array<Vec3d,2> t_array = {translations[0], translations[1]};
+            return SE3d_2(R, t_array);
         }), "Constructor from rotation and translation vectors [velocity, position]", py::arg("R"), py::arg("translations"))
 
+        // ---------------------------------------------------------------------
         // Static methods
-        .def_static("wedge", &SEn3<double, 2>::wedge, "Wedge operator: R9 -> se_2(3)", py::arg("u"))
-        .def_static("vee", &SEn3<double, 2>::vee, "Vee operator: se_2(3) -> R9", py::arg("U"))
+        // ---------------------------------------------------------------------
+        .def_static("exp", &SE3d_2::exp, "Exponential map: se_2(3) -> SE_2(3)", py::arg("u"))
+        .def_static("log", &SE3d_2::log, "Logarithmic map: SE_2(3) -> se_2(3)", py::arg("T"))
+        .def_static("wedge", &SE3d_2::wedge, "Wedge operator: R9 -> se_2(3)", py::arg("u"))
+        .def_static("vee", &SE3d_2::vee, "Vee operator: se_2(3) -> R9", py::arg("U"))
+
         .def_static("random", []() {
             Quaterniond q = Quaterniond::UnitRandom();
-            SO3<double> R(q);                // random rotation
-            Vector3d v = Vector3d::Random(); // random velocity
-            Vector3d p = Vector3d::Random(); // random position
-            std::array<Vector3d, 2> t_array = {v, p};
-            return SEn3<double, 2>(R, t_array);
-        }, "Generate a random SE23 pose (rotation + velocity + position)")
-        
-        // Exponential / Log maps
-        .def_static("exp", &SEn3<double, 2>::exp, "Exponential map: se_2(3) -> SE_2(3)", py::arg("u"))
-        .def_static("log", &SEn3<double, 2>::log, "Logarithmic map: SE_2(3) -> se_2(3)", py::arg("T"))
+            SO3d R(q);                // random rotation
+            Vec3d v = Vec3d::Random(); // random velocity
+            Vec3d p = Vec3d::Random(); // random position
+            std::array<Vec3d, 2> t_array = {v, p};
+            return SE3d_2(R, t_array);
+        }, "Generate a random SE3_2 pose (rotation + velocity + position)")
 
-        // Instance accessors
-        .def("asMatrix", &SEn3<double, 2>::asMatrix, "Return 5x5 extended pose matrix", py::return_value_policy::copy)
-        .def("R", &SEn3<double, 2>::R, "Return rotation part", py::return_value_policy::copy)
-        .def("q", [](const SEn3<double, 2>& self){
-            const auto& q = self.q(); Vector4d v; v << q.w(), q.x(), q.y(), q.z(); return v;
+        .def_static("tangent_zero", []() {
+                return Vec9d::Zero();
+            }, "Zero element of se_2(3).",
+            py::return_value_policy::copy)
+
+        // ---------------------------------------------------------------------
+        // Instance accessors (return copies)
+        // ---------------------------------------------------------------------
+        .def("asMatrix", &SE3d_2::asMatrix, "Return 5x5 extended pose matrix", py::return_value_policy::copy)
+        .def("R", &SE3d_2::R, "Return rotation part", py::return_value_policy::copy)
+        .def("q", [](const SE3d_2& self){
+            const auto& q = self.q(); Vec4d v; v << q.w(), q.x(), q.y(), q.z(); return v;
         }, "Return rotation quaternion as [w, x, y, z]")
-        .def("t", &SEn3<double, 2>::t, "Return translation array", py::return_value_policy::copy)
-        .def("v", [](const SEn3<double, 2>& self){ return self.t()[0]; }, "Return velocity vector")
-        .def("p", [](const SEn3<double, 2>& self){ return self.t()[1]; }, "Return position vector")
-        .def("inv", &SEn3<double, 2>::inv, "Return inverse extended pose", py::return_value_policy::copy)
-        .def("Adjoint", &SEn3<double, 2>::Adjoint, "Return Adjoint matrix", py::return_value_policy::copy)
+        .def("t", &SE3d_2::t, "Return translation array", py::return_value_policy::copy)
+        .def("v", [](const SE3d_2& self){ return self.t()[0]; }, "Return velocity vector")
+        .def("p", [](const SE3d_2& self){ return self.t()[1]; }, "Return position vector")
+        .def("inv", &SE3d_2::inv, "Return inverse extended pose", py::return_value_policy::copy)
+        .def("Adjoint", &SE3d_2::Adjoint, "Return Adjoint matrix", py::return_value_policy::copy)
 
-        // Operators
-        .def("__mul__", [](const SEn3<double, 2>& a, const SEn3<double, 2>& b){ return a * b; }, "Compose extended poses", py::arg("other"))
+        // ---------------------------------------------------------------------
+        // Operator overloads
+        // ---------------------------------------------------------------------
+        .def("__mul__",
+            [](const SE3d_2& a, const SE3d_2& b){
+                return a * b;
+            },
+            "Compose extended poses", py::arg("other"))
 
-        // Representation
-        .def("__repr__", [](const SEn3<double, 2>& self){
-            return "<SE23 extended pose>";
-    });
+        // ---------------------------------------------------------------------
+        // __call__ -> asMatrix
+        // ---------------------------------------------------------------------
+        .def("__call__", &SE3d_2::asMatrix,
+             "Call operator to get the extended pose matrix (5x5).",
+             py::return_value_policy::copy)
 
-    // // Add version info
-    // m.attr("__version__") = VERSION_INFO;
+        // ---------------------------------------------------------------------
+        // __repr__
+        // ---------------------------------------------------------------------
+        .def("__repr__", [](const SE3d_2& self){
+            return "<SE3_2 extended pose>"; // TODO: improve representation
+        }
+    );
+
+    // TODO: include more bindings as needed
 }

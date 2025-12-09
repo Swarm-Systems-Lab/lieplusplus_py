@@ -2,7 +2,6 @@ import pytest
 import numpy as np
 import lieplusplus as lpp
 
-
 class TestSO3:
     """Test cases for SO(3) rotation group"""
     
@@ -119,12 +118,12 @@ class TestSE3:
         )
 
 
-class TestSE23:
+class TestSE3_2:
     """Test cases for SE_2(3) extended pose group"""
     
     def test_identity(self):
         """Test identity extended pose"""
-        X = lpp.SE23()
+        X = lpp.SE3_2()
         matrix = X.asMatrix()
         expected = np.eye(5)
         np.testing.assert_allclose(matrix, expected, rtol=1e-10, atol=1e-10)
@@ -134,7 +133,7 @@ class TestSE23:
         R = lpp.SO3.random()
         v = np.random.randn(3)
         p = np.random.randn(3)
-        X = lpp.SE23(R, [v, p])
+        X = lpp.SE3_2(R, [v, p])
         
         # Check rotation part
         np.testing.assert_allclose(X.R(), R.asMatrix(), rtol=1e-10, atol=1e-10)
@@ -145,9 +144,9 @@ class TestSE23:
     
     def test_exp_log_consistency(self):
         """Test exp(log(X)) = X"""
-        X = lpp.SE23.random()
-        xi = lpp.SE23.log(X)
-        X_recovered = lpp.SE23.exp(xi)
+        X = lpp.SE3_2.random()
+        xi = lpp.SE3_2.log(X)
+        X_recovered = lpp.SE3_2.exp(xi)
         
         np.testing.assert_allclose(
             X.asMatrix(), X_recovered.asMatrix(), rtol=1e-10, atol=1e-10
@@ -155,8 +154,8 @@ class TestSE23:
     
     def test_group_operations(self):
         """Test group operations"""
-        X1 = lpp.SE23.random()
-        X2 = lpp.SE23.random()
+        X1 = lpp.SE3_2.random()
+        X2 = lpp.SE3_2.random()
         
         # Test composition
         X12 = X1 * X2

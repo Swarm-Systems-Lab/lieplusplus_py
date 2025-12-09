@@ -12,14 +12,17 @@ except ImportError as e:
         "Make sure the package is properly installed."
     ) from e
 
-__version__ = "0.1.0"
-__author__ = "Jesús Bautista Villar"
-__email__ = "jesbauti20@gmail.com"
+# Set up inheritance for Lie groups
+# This allows isinstance(so3, LieGroup) to work correctly
+SO3.__bases__ = (LieGroup,)
+SE3.__bases__ = (LieGroup,)
+SE3_2.__bases__ = (LieGroup,)
 
 # Re-export main classes for easier access
 __all__ = [
+    "LieGroup",
     "SO3",
     "SE3", 
-    "SE23",
+    "SE3_2",
     "__version__",
 ]

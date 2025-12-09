@@ -28,64 +28,111 @@ Python bindings for the [Lie++ C++ library](https://github.com/jesusBV20/Lie-plu
 ### Requirements
 
 - Python 3.8+
-- NumPy
+- NumPy 
 - pybind11
 - C++17 compatible compiler
 - Eigen3 (automatically downloaded during the build)
 
-## API Reference
+## Lie++ Python API Documentation
 
 ### SO(3) - 3D Rotations
 
 ```python
-# Constructors
-R = lpp.SO3()                    # Identity
-R = lpp.SO3.exp(axis_angle)      # From axis-angle vector
-R = lpp.SO3.random()             # Random rotation
+import numpy as np
+from lieplusplus import SO3
 
-# Operations
-R1 * R2                          # Composition
-R.inverse()                      # Inverse rotation
-R * vector                       # Rotate vector
-R.asMatrix()                     # Get 3x3 matrix
-R.q()                            # Get quaternion
-R.Adjoint()                      # Adjoint matrix
+# --- Constructors ---
+R = SO3()                               # Identity rotation
+R = SO3([1, 0, 0, 0])                   # Quaternion [w, x, y, z]
+R = SO3(np.eye(3))                      # Rotation matrix (3×3)
+R = SO3([0.1, 0.2, 0.3])                # Rotation vector (exp map)
+R = SO3([1, 0, 0], [0, 1, 0])           # Rotation sending u → v
+R = SO3.random()                        # Random rotation
+
+# --- Group operations ---
+R3 = R1 * R2         # Compose rotations
+v_rot = R * v        # Rotate a 3-vector
+M_rot = R * M        # Rotate a 3×3 matrix
+
+# --- Lie-theoretic operations (static) ---
+u  = SO3.log(R)          # R^3 log-coordinate
+R2 = SO3.exp(u)          # Exponential map
+U  = SO3.wedge(u)        # 3×3 skew-symmetric matrix
+u2 = SO3.vee(U)          # Vector from skew matrix
+u0 = SO3.tangent_zero()  # Zero element of so(3)
+
+# --- Jacobians ---
+J    = SO3.leftJacobian(u)
+Jinv = SO3.invLeftJacobian(u)
+
+# --- Accessors ---
+R.asMatrix()      # 3×3 rotation matrix
+R.Adjoint()       # 3×3 Adjoint matrix
+R.inv()           # Inverse rotation
+R.q()             # Quaternion [w, x, y, z]
 ```
 
 ### SE(3) - Poses
 
 ```python
-# Constructors  
-T = lpp.SE3()                    # Identity pose
-T = lpp.SE3(R, t)                # From rotation and translation
-T = lpp.SE3.exp(xi)              # From se(3) vector (6D)
-T = lpp.SE3.random()             # Random pose
+import numpy as np
+from lieplusplus import SE3, SO3
 
-# Operations
-T1 * T2                          # Pose composition
-T.inverse()                      # Inverse pose
-T * point                        # Transform point
-T.asMatrix()                     # Get 4x4 matrix
-T.R()                            # Get SO(3) rotation part as a 3x3 matrix
-T.translation()                  # Get translation vector
-T.Adjoint()                      # 6x6 Adjoint matrix
+# --- Constructors ---
+T = SE3()                                 # Identity pose
+T = SE3(R, t)                             # SO(3) + translation vector
+T = SE3(np.eye(4))                        # Full 4×4 pose matrix
+T = SE3([0.1, 0.2, 0.3], [1, 2, 3])       # Rotation vector + translation
+T = SE3.random()                          # Random pose
+
+# --- Group operations ---
+T3 = T1 * T2       # Compose poses
+p_world = T * p    # Transform a 3D point
+
+# --- Lie-theoretic operations (static) ---
+u  = SE3.log(T)        # R^6 tangent vector
+T2 = SE3.exp(u)
+U  = SE3.wedge(u)
+u2 = SE3.vee(U)
+u0 = SE3.tangent_zero()
+
+# --- Accessors ---
+T.asMatrix()       # 4×4 transformation matrix
+T.Adjoint()        # 6×6 Adjoint matrix
+T.inv()            # Inverse pose
+T.R()              # Rotation (SO3)
+T.q()              # Quaternion
+T.translation()    # 3D translation vector
+
 ```
 
 ### SE_2(3) - Extended Poses
 
 ```python
-# Constructors
-X = lpp.SE23()                   # Identity extended pose  
-X = lpp.SE23(R, [v, p])          # From rotation, velocity, position
-X = lpp.SE23.exp(xi)             # From se_2(3) vector (9D)
-X = lpp.SE23.random()            # Random extended pose
+import numpy as np
+from lieplusplus import SE3_2, SO3
 
-# Operations
-X1 * X2                          # Extended pose composition
-X.inverse()                      # Inverse
-X.asMatrix()                     # Get 5x5 matrix
-X.R()                            # Get SO(3) part as a 3x3 matrix
-X.v()                            # Get velocity vector
-X.p()                            # Get position vector  
-X.Adjoint()                      # 9x9 Adjoint matrix
+# --- Constructors ---
+X = SE3_2()                               # Identity extended pose
+X = SE3_2(R, [v, p])                      # Rotation + [velocity, position]
+X = SE3_2(R, [np.zeros(3), np.ones(3)])   # Example
+X = SE3_2.random()                        # Random extended pose
+
+# --- Group operations ---
+X3 = X1 * X2
+
+# --- Lie-theoretic operations (static) ---
+u  = SE3_2.log(X)       # R^9 tangent vector
+X2 = SE3_2.exp(u)
+U  = SE3_2.wedge(u)
+u2 = SE3_2.vee(U)
+u0 = SE3_2.tangent_zero()
+
+# --- Accessors ---
+X.asMatrix()    # 5×5 extended matrix
+X.Adjoint()     # 9×9 Adjoint matrix
+X.inv()         # Inverse extended pose
+X.R()           # Rotation (SO3)
+X.v()           # Velocity vector
+X.p()           # Position vector
 ```
