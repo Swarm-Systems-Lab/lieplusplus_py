@@ -1,50 +1,124 @@
-[project]
-name = "lieplusplus-py"
-version = "0.1.0"
-description = "Python bindings for the Lie++ C++ library"
-readme = "README.md"
-requires-python = ">=3.8"
-license = "GPL-3.0-or-later"
-authors = [
-    { name="Jesús Bautista Villar", email="jesbauti20@gmail.com" }
-]
-
-# Required dependencies
-dependencies = [
-    "numpy>=1.19.0",
-]
-
-# Optional dependencies
-[project.optional-dependencies]
-dev = [
-    "pytest>=6.0",
-    "pytest-cov",
-    "black",
-    "isort",
-    "mypy",
-    "pre-commit"
-]
-examples = [
-    "matplotlib",
-    "jupyter"
-]
-
 [build-system]
 requires = [
-    "setuptools>=64",
-    "wheel", 
+    "scikit-build-core>=0.11.6",
+    "cmake>=3.18",
     "pybind11>=2.6.0",
-    "pybind11[global]"
+    "ninja",
 ]
-build-backend = "setuptools.build_meta"
+build-backend = "scikit_build_core.build"
 
-[tool.setuptools]
-packages = ["lieplusplus"]
+[tool.scikit-build]
+# Ensure Python sources under src/ are included in the wheel
+wheel.packages = ["src/lieplusplus"]
 
-[tool.setuptools.package-dir]
-lieplusplus = "src/lieplusplus"
+[project]
+name = "lieplusplus-py"
+version = "0.0.1"
+description = "Swarm Systems Lab Python lieplusplus library"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "GPL-3.0-or-later" }
+authors = [
+    { name = "Jesús Bautista Villar", email = "jesbauti20@gmail.com" }
+]
+dependencies = [
+    "numpy>=1.19",
+]
+
+[project.optional-dependencies]
+# Only include things here that an END USER might want to install.
+examples = [
+    "matplotlib>=3.7",
+    "matplotlib-inline>=0.1.6,<0.3",
+    "IPython>=8.0",
+    "ipykernel",
+]
+
+# --- PEP 735: Dependency Groups (The Modern Standard) ---
+[dependency-groups]
+dev = [
+    "ruff>=0.9.0",
+    "ty>=0.0.14",
+    "pre-commit>=3.0",
+]
+test = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+docs = [
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.0.0",
+    "mkdocstrings[python]>=0.24.0",
+]
+examples = [
+    "matplotlib>=3.7",
+    "matplotlib-inline>=0.1.6,<0.3",
+    "IPython>=8.0",
+    "ipykernel",
+]
+
+# --- Hatch Configuration ---
+[tool.hatch.metadata]
+allow-direct-references = true
+
+## Version is now declared directly in [project]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "README.md", "LICENSE"]
+exclude = ["tests", "examples", "output"]
+
+# --- Tool Configuration ---
+[tool.ruff]
+line-length = 100
+exclude = ["output"]
+target-version = "py310" # Checks python 3.10 works
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "F",      # pyflakes
+    "W",      # pycodestyle warnings
+    "I",      # isort (Import sorting)
+    "UP",     # pyupgrade (Modernizes syntax automatically)
+    "B",      # flake8-bugbear (Catches common bugs)
+    "A",      # flake8-builtins
+    "C4",     # flake8-comprehensions
+    "T20",    # flake8-print (Warns about print statements)
+    "SIM",    # flake8-simplify
+    "RUF",    # ruff-specific rules
+]
+ignore = [
+    "D100",   # Missing docstring in public module
+    "D104",   # Missing docstring in public package
+    "E501",   # Line too long (handled by formatter)
+    "F403",
+    "F401",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-addopts = "-v --tb=short"
+addopts = "-v --strict-markers"
+
+[tool.coverage.run]
+source = ["src/lieplusplus"]
+omit = ["tests/*", "examples/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
