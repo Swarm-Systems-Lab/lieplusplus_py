@@ -19,6 +19,7 @@ public:
 
 PYBIND11_MODULE(_core, m) {
     m.doc() = "Python bindings for Lie++ library";
+    m.attr("__version__") = "0.0.1";
 
     // Eigen double types alias
     using Eigen::Matrix3d;
