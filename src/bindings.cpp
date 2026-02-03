@@ -40,7 +40,7 @@ PYBIND11_MODULE(_core, m) {
     py::class_<LieGroup>(m, "LieGroup")
         .doc() = R"(
             LieGroup - Abstract base class for all Lie groups
-            
+
             All Lie groups should implement the following methods:
             - exp(): Exponential map from Lie algebra to Lie group
             - log(): Logarithmic map from Lie group to Lie algebra
@@ -52,7 +52,7 @@ PYBIND11_MODULE(_core, m) {
             - __mul__(): Group composition
             - __call__(): Convert to matrix representation
         )";
-    
+
     // ---------------------------------------------------------------------------
     // SO(3) - 3D Rotation Group
     py::class_<SO3d>(m, "SO3")
@@ -89,8 +89,8 @@ PYBIND11_MODULE(_core, m) {
             }, "Zero element of so(3).",
             py::return_value_policy::copy)
 
-        .def_static("leftJacobian", &SO3d::leftJacobian, 
-                    "Left Jacobian of SO(3). Returns a 3x3 matrix.", 
+        .def_static("leftJacobian", &SO3d::leftJacobian,
+                    "Left Jacobian of SO(3). Returns a 3x3 matrix.",
                     py::arg("u"))
         .def_static("invLeftJacobian", &SO3d::invLeftJacobian,
                     "Inverse Left Jacobian of SO(3). Returns a 3x3 matrix.",
@@ -101,8 +101,8 @@ PYBIND11_MODULE(_core, m) {
         .def_static("invRightJacobian", &SO3d::invRightJacobian,
                     "Inverse Right Jacobian. Returns a 3x3 matrix.",
                     py::arg("u"))
-        .def_static("Gamma2", &SO3d::Gamma2, 
-                    "Gamma2 matrix for SO(3).", 
+        .def_static("Gamma2", &SO3d::Gamma2,
+                    "Gamma2 matrix for SO(3).",
                     py::arg("u"))
 
         // ---------------------------------------------------------------------
@@ -182,7 +182,7 @@ PYBIND11_MODULE(_core, m) {
             "Rotate a 3-vector.",
             py::arg("vector"),
             py::return_value_policy::copy)
-        
+
         .def("__mul__",
             [](const SO3d& a, const Eigen::Matrix<double, 3, Eigen::Dynamic>& vectors) {
                 Eigen::Matrix<double, 3, Eigen::Dynamic> result(3, vectors.cols());
@@ -194,14 +194,14 @@ PYBIND11_MODULE(_core, m) {
             "Apply rotation to an array of 3-vectors (3xN matrix).",
             py::arg("vectors"),
             py::return_value_policy::copy)
-        
+
         // ---------------------------------------------------------------------
         // __call__ -> asMatrix
         // ---------------------------------------------------------------------
         .def("__call__", &SO3d::asMatrix,
              "Call operator to get the rotation matrix (3x3).",
              py::return_value_policy::copy)
-             
+
         // ---------------------------------------------------------------------
         // __repr__
         // ---------------------------------------------------------------------
@@ -244,7 +244,7 @@ PYBIND11_MODULE(_core, m) {
             std::array<Vec3d, 1> t_array = {t};
             return SE3d(rot, t_array);
         }), "Constructor from rotation vector (exponential map) and translation vector", py::arg("R"), py::arg("t"))
-        
+
         // ---------------------------------------------------------------------
         // Static methods
         // ---------------------------------------------------------------------
@@ -283,15 +283,15 @@ PYBIND11_MODULE(_core, m) {
         // ---------------------------------------------------------------------
         // Operator overloads
         // ---------------------------------------------------------------------
-        .def("__mul__", 
+        .def("__mul__",
             [](const SE3d& a, const SE3d& b){
-                return a * b; 
-            }, 
+                return a * b;
+            },
             "Compose poses", py::arg("other"))
-        .def("__mul__", 
+        .def("__mul__",
             [](const SE3d& a, const Vec3d& p){
                 return a * p;
-            }, 
+            },
             "Transform point", py::arg("point"), py::return_value_policy::copy)
 
         // ---------------------------------------------------------------------
@@ -313,7 +313,7 @@ PYBIND11_MODULE(_core, m) {
     // ---------------------------------------------------------------------------
     // SE_2(3) - Extended Special Euclidean Group (pose + velocity)
     py::class_<SE3d_2>(m, "SE3_2")
-    
+
         // ---------------------------------------------------------------------
         // Constructors
         // ---------------------------------------------------------------------

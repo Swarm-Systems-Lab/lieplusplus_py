@@ -5,7 +5,7 @@ Python bindings for the [Lie++ C++ library](https://github.com/jesusBV20/Lie-plu
 ## Features
 
 - **SO(3)**: 3D rotation group
-- **SE(3)**: Special Euclidean group (pose: rotation + translation)  
+- **SE(3)**: Special Euclidean group (pose: rotation + translation)
 - **SE_2(3)**: Extended Special Euclidean group (pose + velocity)
 - NumPy integration for seamless array operations
 - High-performance C++ implementation with Python convenience
@@ -28,7 +28,7 @@ Python bindings for the [Lie++ C++ library](https://github.com/jesusBV20/Lie-plu
 ### Requirements
 
 - Python 3.8+
-- NumPy 
+- NumPy
 - pybind11
 - C++17 compatible compiler
 - Eigen3 (automatically downloaded during the build)
