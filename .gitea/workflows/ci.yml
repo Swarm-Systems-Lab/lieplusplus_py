@@ -6,28 +6,10 @@ on:
   pull_request:
 
 jobs:
-  checks:
-    name: ${{ matrix.name }}
+  ci:
+    name: CI
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Fast checks (gate)
-            script: ./scripts/ci/test.sh
-            allow_failure: false
-
-          - name: pre-commit checks (non-blocking)
-            script: ./scripts/ci/pre-commit.sh
-            allow_failure: true
-
-          - name: Typing checks (non-blocking)
-            script: ./scripts/ci/typecheck.sh
-            allow_failure: true
-
-    continue-on-error: ${{ matrix.allow_failure }}
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
@@ -55,7 +37,21 @@ jobs:
           . .venv/bin/activate
           uv sync --all-groups --frozen
 
-      - name: Run check
+      # ---- BLOCKING CHECK ----
+      - name: Unit tests (gate)
         run: |
           . .venv/bin/activate
-          ${{ matrix.script }}
+          ./scripts/ci/test.sh
+
+      # ---- NON-BLOCKING CHECKS ----
+      - name: pre-commit checks
+        continue-on-error: true
+        run: |
+          . .venv/bin/activate
+          ./scripts/ci/pre-commit.sh
+
+      - name: Typing checks
+        continue-on-error: true
+        run: |
+          . .venv/bin/activate
+          ./scripts/ci/typecheck.sh
