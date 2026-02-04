@@ -6,24 +6,46 @@ on:
   pull_request:
 
 jobs:
-  fast-checks:
-    name: Fast checks (gate)
+  checks:
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
-    # Use runner environment (provides node for JS-based actions) and install required system build tools below
     timeout-minutes: 5
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Fast checks (gate)
+            script: ./scripts/ci/test.sh
+            allow_failure: false
+
+          - name: pre-commit checks (non-blocking)
+            script: ./scripts/ci/pre-commit.sh
+            allow_failure: true
+
+          - name: Typing checks (non-blocking)
+            script: ./scripts/ci/typecheck.sh
+            allow_failure: true
+
+    continue-on-error: ${{ matrix.allow_failure }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4 # Gitea can mirror this locally
+        uses: actions/checkout@v4
 
       - name: Install system build dependencies
         run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential cmake ninja-build pkg-config python3-dev
+          sudo apt-get update
+          DEBIAN_FRONTEND=noninteractive sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            pkg-config \
+            python3-dev
 
       - name: Create Python venv and install uv
         run: |
-          python -m venv .venv
+          python3 -m venv .venv
           . .venv/bin/activate
           python -m pip install --upgrade pip
           pip install uv
@@ -33,59 +55,7 @@ jobs:
           . .venv/bin/activate
           uv sync --all-groups --frozen
 
-      - name: Run unit tests
-        run: ./scripts/ci/test.sh
-
-  pre-commit:
-    name: pre-commit checks (non-blocking)
-    runs-on: ubuntu-latest
-    # Use runner environment and install build tools below
-    continue-on-error: true
-    timeout-minutes: 2
-
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install system build dependencies
-        run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential cmake ninja-build pkg-config python3-dev
-
-      - name: Create Python venv and install uv
-        run: |
-          python -m venv .venv
-          . .venv/bin/activate
-          python -m pip install --upgrade pip
-          pip install uv
-
-      - name: Sync deps (frozen)
+      - name: Run check
         run: |
           . .venv/bin/activate
-          uv sync --all-groups --frozen
-      - run: ./scripts/ci/pre-commit.sh
-
-  typing:
-    name: Typing checks (non-blocking)
-    runs-on: ubuntu-latest
-    # Use runner environment and install build tools below
-    continue-on-error: true
-    timeout-minutes: 2
-
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install system build dependencies
-        run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential cmake ninja-build pkg-config python3-dev
-
-      - name: Create Python venv and install uv
-        run: |
-          python -m venv .venv
-          . .venv/bin/activate
-          python -m pip install --upgrade pip
-          pip install uv
-
-      - name: Sync deps (frozen)
-        run: |
-          . .venv/bin/activate
-          uv sync --all-groups --frozen
-      - run: ./scripts/ci/typecheck.sh
+          ${{ matrix.script }}
