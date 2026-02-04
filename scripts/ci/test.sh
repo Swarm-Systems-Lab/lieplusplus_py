@@ -6,6 +6,15 @@ ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT_DIR"
 
 echo "Running tests (fast-fail)"
-uv run pytest -v
+if [ -f .venv/bin/activate ]; then
+	. .venv/bin/activate
+fi
+
+if command -v uv >/dev/null 2>&1; then
+	uv run pytest -v
+else
+	# fallback to direct pytest if uv is not available
+	python -m pytest -v
+fi
 
 echo "Tests finished"
