@@ -4,6 +4,7 @@ set -euo pipefail
 # CI publish script — use twine with credentials from environment
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT_DIR"
+. .venv/bin/activate
 
 if [ -z "${TWINE_USERNAME-}" ] || [ -z "${TWINE_PASSWORD-}" ] || [ -z "${TWINE_REPOSITORY_URL-}" ]; then
 	echo "Missing publishing credentials (TWINE_USERNAME / TWINE_PASSWORD / TWINE_REPOSITORY_URL)"

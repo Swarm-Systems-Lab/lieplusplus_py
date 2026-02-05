@@ -4,6 +4,7 @@ set -euo pipefail
 # Fast-fail publish using uv's built-in publishing support
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT_DIR"
+. .venv/bin/activate
 
 if [ -z "${UV_PUBLISH_USERNAME-}" ] || [ -z "${UV_PUBLISH_PASSWORD-}" ] || [ -z "${UV_PUBLISH_REPOSITORY_URL-}" ]; then
 	echo "Missing publishing credentials (UV_PUBLISH_USERNAME / UV_PUBLISH_PASSWORD / UV_PUBLISH_REPOSITORY_URL)"

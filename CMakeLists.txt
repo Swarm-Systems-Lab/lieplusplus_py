@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.18)
 project(lieplusplus_py LANGUAGES CXX)
 
+# Pass version to C++ code
+add_definitions(-DVERSION="${SKBUILD_PROJECT_VERSION}")
+
 # Use FetchContent to obtain dependencies if not present
 include(FetchContent)
 

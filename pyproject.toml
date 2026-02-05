@@ -3,6 +3,7 @@ requires = [
     "scikit-build-core>=0.11.6",
     "pybind11>=2.6.0",
     "ninja",
+    "setuptools-scm>=8.0",
 ]
 build-backend = "scikit_build_core.build"
 
@@ -12,7 +13,7 @@ wheel.packages = ["src/lieplusplus"]
 
 [project]
 name = "lieplusplus-py"
-version = "0.0.1"
+dynamic = ["version"]
 description = "Swarm Systems Lab Python lieplusplus library"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -24,23 +25,12 @@ dependencies = [
     "numpy>=1.19",
 ]
 
-[project.optional-dependencies]
-# Only include things here that an END USER might want to install.
-examples = [
-    "matplotlib>=3.7",
-    "matplotlib-inline>=0.1.6,<0.3",
-    "IPython>=8.0",
-    "ipykernel",
-]
-
 # --- PEP 735: Dependency Groups (The Modern Standard) ---
 [dependency-groups]
 dev = [
     "ruff>=0.9.0",
     "ty>=0.0.14",
     "pre-commit>=3.0",
-]
-test = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
 ]
@@ -60,7 +50,11 @@ examples = [
 [tool.hatch.metadata]
 allow-direct-references = true
 
-## Version is now declared directly in [project]
+[tool.setuptools_scm]
+write_to = "src/lieplusplus/_version.py"
+tag_regex = "^v(?P<version>.*)$"
+
+## Version is now declared dynamically via setuptools-scm
 
 [tool.setuptools.packages.find]
 where = ["src"]

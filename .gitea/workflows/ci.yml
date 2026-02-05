@@ -25,33 +25,19 @@ jobs:
             pkg-config \
             python3-dev
 
-      - name: Create Python venv and install uv
+      - name: Prepare Python environment
         run: |
-          python3 -m venv .venv
-          . .venv/bin/activate
-          python -m pip install --upgrade pip
-          pip install uv
-
-      - name: Sync deps (frozen)
-        run: |
-          . .venv/bin/activate
-          uv sync --all-groups --frozen
+          ./scripts/ci/setup-env.sh
 
       # ---- BLOCKING CHECK ----
       - name: Unit tests (gate)
-        run: |
-          . .venv/bin/activate
-          ./scripts/ci/test.sh
+        run: ./scripts/ci/test.sh
 
       # ---- NON-BLOCKING CHECKS ----
       - name: pre-commit checks
         continue-on-error: true
-        run: |
-          . .venv/bin/activate
-          ./scripts/ci/pre-commit.sh
+        run: ./scripts/ci/pre-commit.sh
 
       - name: Typing checks
         continue-on-error: true
-        run: |
-          . .venv/bin/activate
-          ./scripts/ci/typecheck.sh
+        run: ./scripts/ci/typecheck.sh
