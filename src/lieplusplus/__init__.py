@@ -6,7 +6,10 @@ from typing import Union
 
 import numpy as np
 
-__version__ = "0.0.1"
+try:
+    from ._version import version as __version__
+except ImportError:
+    __version__ = "unknown"
 
 try:
     from ._core import SE3, SE3_2, SO3, LieGroup

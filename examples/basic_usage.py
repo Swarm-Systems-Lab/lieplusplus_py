@@ -63,7 +63,6 @@ def se23_example():
     p = np.array([1.0, 2.0, 3.0])  # position
     X = lpp.SE3_2(R, [v, p])
 
-
     # Random extended pose via exponential map
     xi = np.random.randn(9)  # 9-dimensional tangent space
     X_random = lpp.SE3_2.exp(xi)
@@ -92,9 +91,7 @@ def adjoint_example():
 
 
 if __name__ == "__main__":
-
     so3_example()
     se3_example()
     se23_example()
     adjoint_example()
-

@@ -5,67 +5,47 @@ on:
     tags:
       - "v*"
 
-# Required secrets (set at organization or repository level in Gitea):
-# - PYPI_REPOSITORY_URL : internal PyPI upload URL (used as TWINE_REPOSITORY_URL)
-# - PYPI_USERNAME       : username or __token__ for uploads
-# - PYPI_PASSWORD       : API token or password for the upload user
-# Recommended: create these at the Organization level so multiple repos can reuse them.
-
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    env:
-      CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-*"
-      CIBW_SKIP: "pp*"
-      CIBW_ARCHS_LINUX: "x86_64"
-      CIBW_MANYLINUX_X86_64: "manylinux_2_28"
-      CIBW_MANYLINUX_AARCH64: "manylinux_2_28"
-      CIBW_MUSLLINUX_X86_64: "musllinux_1_2"
-      CIBW_MUSLLINUX_AARCH64: "musllinux_1_2"
-      CIBW_BUILD_VERBOSITY: "1"
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Check Docker availability
+      - name: Install system build dependencies
         run: |
-          if ! command -v docker >/dev/null 2>&1; then
-            echo "Docker is not installed in the runner."
-            echo "If you're running the runner as a container, mount the host Docker socket:"
-            echo "  -v /var/run/docker.sock:/var/run/docker.sock"
-            exit 1
-          fi
-          docker --version
-          if ! docker info >/dev/null 2>&1; then
-            echo "Docker daemon is unreachable (permission or socket issue)."
-            echo "If using socket mounting, ensure the container user can access /var/run/docker.sock."
-            exit 1
-          fi
+          set -eux
+          sudo apt-get update
+          DEBIAN_FRONTEND=noninteractive sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            pkg-config \
+            python3-dev
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install build tooling
+      - name: Prepare Python environment
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install build cibuildwheel==2.* twine
+          ./scripts/ci/setup-env.sh build cibuildwheel==2.* twine
 
-      - name: Build sdist
-        run: python -m build --sdist --outdir dist
-
-      - name: Build wheels
-        run: python -m cibuildwheel --output-dir dist
+      - name: Build package (publish build)
+        env:
+          CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-*"
+          CIBW_SKIP: "pp*"
+          CIBW_ARCHS_LINUX: "x86_64"
+          CIBW_MANYLINUX_X86_64: "manylinux_2_28"
+          CIBW_BUILD_VERBOSITY: "1"
+        run: ./scripts/release/build_publish.sh
 
       - name: Verify dist artifacts
-        run: python -m twine check dist/*
+        run: |
+          . .venv/bin/activate
+          python -m twine check dist/*
 
       - name: Publish to internal PyPI
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
           TWINE_REPOSITORY_URL: ${{ secrets.PYPI_REPOSITORY_URL }}
-        run: python -m twine upload --non-interactive dist/*
+        run: ./scripts/release/publish_ci.sh
