@@ -1,5 +1,9 @@
 # lieplusplus_py
 
+> **Warning — AI-generated content:** This documentation page was largely
+> generated with the assistance of an AI. Please verify examples and
+> installation instructions before relying on them in critical workflows.
+
 High-performance Python bindings for the Lie++ C++ library, providing efficient operations on Lie groups commonly used in robotics, computer vision, and geometric computing.
 
 ## What is lieplusplus_py?

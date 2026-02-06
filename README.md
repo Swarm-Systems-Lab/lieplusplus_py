@@ -2,6 +2,11 @@
 
 Python bindings for the [Lie++ C++ library](https://github.com/jesusBV20/Lie-plusplus), providing efficient operations on Lie groups commonly used in robotics and computer vision.
 
+> **Warning — AI-generated content:** This README was largely generated with the
+> help of an AI assistant. While we strive for accuracy, please verify critical
+> details (installation steps, API contract, and examples) before relying on them
+> in production.
+
 ## Features
 
 - **SO(3)**: 3D rotation group
@@ -11,27 +16,41 @@ Python bindings for the [Lie++ C++ library](https://github.com/jesusBV20/Lie-plu
 - High-performance C++ implementation with Python convenience
 - Comprehensive test suite and examples
 
-## Installation
+## Requirements
 
-### From Source
+- Python 3.10+
 
-   ```bash
-   git clone https://github.com/Swarm-Systems-Lab/lieplusplus_py.git
-   cd lieplusplus_py
-   pip install -e .
-   ```
-   Alternatively, for a development installation (includes testing and formatting tools):
-   ```bash
-   pip install -e .[dev]
-   ```
+## Quick Start
 
-### Requirements
+```bash
+pip install lieplusplus-py
+```
 
-- Python 3.8+
-- NumPy
-- pybind11
-- C++17 compatible compiler
-- Eigen3 (automatically downloaded during the build)
+```python
+import numpy as np
+from lieplusplus import SO3, SE3
+
+# Create a 3D rotation from axis-angle (exponential map)
+R = SO3.exp(np.array([0.1, 0.2, 0.3]))
+print(R.asMatrix())
+
+# Create a 3D pose from a 6D twist
+T = SE3.exp(np.array([0.1, 0.2, 0.3, 1.0, 2.0, 3.0]))
+print(T.asMatrix())
+```
+
+## Architecture (short)
+
+- Python layer: user-facing API with type hints and convenience helpers.
+- C++ bindings: pybind11 exposes Lie++ classes efficiently to Python.
+- Core: the Lie++ C++ library provides mathematical implementations; Eigen3 is
+   used for linear algebra.
+
+## Use Cases
+
+- Robotics: kinematics, motion planning, state estimation.
+- Computer vision: SLAM and structure-from-motion.
+- Research and optimization on manifolds.
 
 ## Lie++ Python API Documentation
 

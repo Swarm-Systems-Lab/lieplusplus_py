@@ -5,11 +5,14 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT_DIR"
 
-echo "Syncing dependencies (frozen)"
-uv sync --all-groups --frozen
+echo "Syncing dependencies (dev groups)"
+./scripts/ci/setup-env.sh --groups dev
 
 echo "Running pre-commit checks"
 ./scripts/ci/pre-commit.sh
+
+echo "Running lint"
+./scripts/ci/lint.sh
 
 echo "Running tests"
 ./scripts/ci/test.sh

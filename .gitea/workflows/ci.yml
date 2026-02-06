@@ -25,18 +25,18 @@ jobs:
             pkg-config \
             python3-dev
 
-      - name: Prepare Python environment
-        run: |
-          ./scripts/ci/setup-env.sh
+      - name: Prepare Python environment (dev)
+        run: ./scripts/ci/setup-env.sh --groups dev
 
       # ---- BLOCKING CHECK ----
       - name: Unit tests (gate)
         run: ./scripts/ci/test.sh
 
-      # ---- NON-BLOCKING CHECKS ----
       - name: pre-commit checks
-        continue-on-error: true
         run: ./scripts/ci/pre-commit.sh
+
+      - name: Lint
+        run: ./scripts/ci/lint.sh
 
       - name: Typing checks
         continue-on-error: true
