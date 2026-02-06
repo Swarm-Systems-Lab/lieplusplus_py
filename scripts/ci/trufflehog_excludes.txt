@@ -1,0 +1,9 @@
+.venv
+site/
+examples/
+tests/
+output/
+node_modules/
+dist/
+build/
+uv.lock

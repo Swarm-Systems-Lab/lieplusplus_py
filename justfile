@@ -15,6 +15,7 @@ build:
 # Clean build artifacts
 clean:
     rm -rf build dist src/lieplusplus.egg-info .pytest_cache .ruff_cache __pycache__ .venv
+    uv clean
 
 # Run the basic usage example
 example:
@@ -44,9 +45,10 @@ act:
 test:
     ./scripts/ci/test.sh
 
-# Run tests with coverage
-test-coverage:
-    uv run pytest --cov=src
+# Run security scans
+security:
+    ./scripts/ci/semgrep.sh
+    ./scripts/ci/trufflehog.sh
 
 # Start the documentation server (installs docs deps on demand)
 docs:

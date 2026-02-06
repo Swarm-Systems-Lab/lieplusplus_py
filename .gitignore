@@ -78,3 +78,7 @@ external/
 
 # Doc site
 site
+
+# Security scan results
+semgrep-results.json
+trufflehog-results.json
