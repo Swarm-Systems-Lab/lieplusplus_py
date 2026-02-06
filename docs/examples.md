@@ -140,3 +140,16 @@ R = lie.SO3.exp(np.array([1.0, 0.0, 0.0]))
 plt.imshow(R.matrix())
 plt.show()
 ```
+
+## Running the packaged examples
+
+The examples in `examples/` are small smoke tests demonstrating basic usage. To run the `basic_usage.py` example (no output expected on success):
+
+```bash
+uv run python examples/basic_usage.py
+# or, if using venv:
+source .venv/bin/activate
+python examples/basic_usage.py
+```
+
+Expected: The script runs without uncaught exceptions and exits with status 0. If you see import errors, follow the Troubleshooting page to collect build logs.

@@ -6,6 +6,30 @@ We welcome contributions to lieplusplus_py! This guide outlines how to contribut
 
 Follow the [Golden Path](golden-path.md) for setting up your development environment.
 
+## Quick contributor checklist
+
+Follow these exact steps locally to prepare a contribution:
+
+```bash
+# Clone and sync dev environment
+git clone <repo-url>
+cd lieplusplus_py
+uv sync --group dev --group docs
+source .venv/bin/activate
+
+# Install editable package
+uv run pip install -e .
+
+# Run tests and lint
+uv run ruff check .
+uv run pytest
+
+# Build docs locally (optional)
+uv run mkdocs build
+```
+
+Make your changes, add tests, and run the checklist above before opening a PR.
+
 ## Code Style
 
 We use [ruff](https://github.com/astral-sh/ruff) for linting and formatting:

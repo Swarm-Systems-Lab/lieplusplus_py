@@ -46,6 +46,7 @@ nav:
   - Home: index.md
   - Golden Path:
       - Development Setup: golden-path.md
+      - Prerequisites: golden-path/prereqs.md
       - Toolchain & Build: golden-path/toolchain.md
       - Architectural Decisions: golden-path/adrs.md
       - Tutorials: golden-path/tutorials.md

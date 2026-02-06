@@ -172,6 +172,37 @@ If these solutions don't work:
 
 3. For urgent issues, contact maintainers directly
 
+## Collecting Build Logs (helpful when filing issues)
+
+When asking for help, include the following:
+
+- Output of the failing `pip install -e .` or `uv run pip install -e . -v` (verbose). Copy full stdout/stderr or attach as a file.
+- The contents of `pip-log.txt` if pip reports one, and the CMake configuration output (look in `_skbuild` or `build` directories).
+- The compiler and linker command that failed (visible in verbose build logs).
+- Python version (`python --version`) and `pip list` output.
+
+Example commands to capture logs:
+
+```bash
+uv run pip install -e . -v 2>&1 | tee install_verbose.log
+# Inspect CMake logs
+find _skbuild -type f -name "CMakeFiles*" -maxdepth 3 -print
+```
+
+## Common Linker / Symbol Errors
+
+If the build completes but importing the module raises undefined symbol errors or `ImportError` stating missing symbols, check:
+
+- ABI mismatch between compiler flags (e.g., stdlib differences) and the Python interpreter used to build the extension.
+- That the extension was built against the same Python version and virtualenv used to import it.
+- Rebuild cleanly after removing `_skbuild/` and `build/` directories.
+
+## When to prefer system Eigen vs CMake-fetch
+
+- If you have a packaged `libeigen3-dev`, preferring the system Eigen can avoid network fetches and reduce CI variability.
+- If you want the exact pinned Eigen release used by the project, let CMake fetch it (default behavior when system Eigen not found).
+
+
 ## Debug Mode
 
 For development debugging:

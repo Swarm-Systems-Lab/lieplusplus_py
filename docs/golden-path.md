@@ -21,3 +21,29 @@ lieplusplus_py uses a modern Python packaging toolchain with C++ extensions:
 - **Testing Strategy**: Property-based testing for mathematical correctness
 
 See [Architectural Decisions](golden-path/adrs.md) for detailed rationale.
+
+## Quick Golden Path (clone → dev install → test → docs)
+
+Follow these copy-paste commands for a minimal developer setup (Linux):
+
+```bash
+# Clone
+git clone https://github.com/jesusBV20/lieplusplus_py.git
+cd lieplusplus_py
+
+# Install system prerequisites (see prerequisites page for details)
+sudo apt update && sudo apt install -y build-essential cmake python3.10-dev python3.10-venv libeigen3-dev ninja-build
+
+# Sync with uv (creates .venv) and activate
+uv sync --group dev --group docs
+source .venv/bin/activate
+
+# Install editable package and run tests
+uv run pip install -e .
+uv run pytest
+
+# Build docs locally
+uv run mkdocs build
+```
+
+See [Prerequisites](golden-path/prereqs.md) for OS-specific setup and alternatives (pip/venv).

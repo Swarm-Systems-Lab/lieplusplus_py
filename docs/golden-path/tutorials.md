@@ -21,6 +21,16 @@ Step-by-step guides to get started with lieplusplus_py development.
    uv run python -c "import lieplusplus; print('Version:', lieplusplus.__version__)"
    ```
 
+If you do not use `uv`, the equivalent `venv`-based commands are:
+
+```bash
+python3.10 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip setuptools wheel
+pip install -e .
+python -c "import lieplusplus; print('Version:', lieplusplus.__version__)"
+```
+
 ## Tutorial 2: Building from Source
 
 1. **Activate Environment**:
@@ -30,7 +40,7 @@ Step-by-step guides to get started with lieplusplus_py development.
 
 2. **Build in Development Mode**:
    ```bash
-   pip install -e .
+pip install -e .
    ```
 
 3. **Run Tests**:
@@ -81,6 +91,17 @@ Step-by-step guides to get started with lieplusplus_py development.
 
 3. **Check for Import Errors**:
    If `_core` fails to import, check CMake output for compilation errors.
+
+If you see `ImportError` referencing `_core` or `module not found`, common checks:
+
+- Ensure `.venv` is activated and the editable install succeeded.
+- Re-run the editable install with verbose output to capture build errors:
+
+```bash
+uv run pip install -e . -v
+```
+
+- Inspect `_skbuild` and `build` directories for compilation logs and link errors.
 
 ## Tutorial 5: Adding New Lie Group Operations
 
