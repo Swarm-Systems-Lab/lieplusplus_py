@@ -15,7 +15,19 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Extract version from tag
-        run: echo "SETUPTOOLS_SCM_PRETEND_VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+        run: |
+          REF=${GITHUB_REF:-${GITEA_REF:-}}
+          echo "Resolved ref: ${REF}"
+          if [ -z "$REF" ]; then
+            echo "Tag ref not found (GITHUB_REF/GITEA_REF)" >&2
+            exit 1
+          fi
+          VERSION=${REF#refs/tags/v}
+          if [ "$VERSION" = "$REF" ]; then
+            VERSION=${REF#refs/tags/}
+          fi
+          echo "SETUPTOOLS_SCM_PRETEND_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Using version: $VERSION"
 
       - name: Install system build dependencies
         run: |
@@ -35,6 +47,7 @@ jobs:
       - name: Build package (publish build)
         env:
           CIBW_ENVIRONMENT: "SETUPTOOLS_SCM_PRETEND_VERSION=${SETUPTOOLS_SCM_PRETEND_VERSION}"
+          CIBW_ENVIRONMENT_PASS_LINUX: "SETUPTOOLS_SCM_PRETEND_VERSION"
           CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-*"
           CIBW_SKIP: "pp*"
           CIBW_ARCHS_LINUX: "x86_64"
