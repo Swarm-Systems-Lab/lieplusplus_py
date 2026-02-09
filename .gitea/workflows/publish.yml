@@ -46,7 +46,7 @@ jobs:
 
       - name: Prepare Python environment
         run: |
-          ./scripts/ci/setup-env.sh --with build --with cibuildwheel==2.* --with twine
+          ./scripts/ci/setup-env.sh
 
       - name: Build package (publish build)
         env:
