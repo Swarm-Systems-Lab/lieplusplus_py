@@ -22,9 +22,13 @@ jobs:
             echo "Tag ref not found (GITHUB_REF/GITEA_REF)" >&2
             exit 1
           fi
-          VERSION=${REF#refs/tags/v}
-          if [ "$VERSION" = "$REF" ]; then
-            VERSION=${REF#refs/tags/}
+          if [[ "$REF" == refs/tags/* ]]; then
+            VERSION=${REF#refs/tags/v}
+            if [ "$VERSION" = "$REF" ]; then
+              VERSION=${REF#refs/tags/}
+            fi
+          else
+            VERSION="0.0.0-dev"
           fi
           echo "SETUPTOOLS_SCM_PRETEND_VERSION=$VERSION" >> $GITHUB_ENV
           echo "Using version: $VERSION"
@@ -42,7 +46,7 @@ jobs:
 
       - name: Prepare Python environment
         run: |
-          ./scripts/ci/setup-env.sh build cibuildwheel==2.* twine
+          ./scripts/ci/setup-env.sh --with build --with cibuildwheel==2.* --with twine
 
       - name: Build package (publish build)
         env:
