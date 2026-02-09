@@ -84,3 +84,33 @@ This document records key architectural decisions made during the development of
 **Consequences**:
 - Test execution time may be longer
 - Requires careful test design for numerical stability
+
+
+## ADR 005: Python Version Support Strategy
+
+**Date**: 2026
+
+**Status**: Accepted
+
+**Context**: Need to balance using modern Python features for development efficiency while ensuring broad compatibility for users who cannot upgrade to the latest Python versions.
+
+**Decision**: Develop in the most recent stable Python version, but test and publish wheels for all supported Python versions starting from Python 3.10.
+
+**Rationale**:
+- Allows use of latest language features, type hints, and performance improvements during development
+- Ensures compatibility with a wide range of user environments
+- Follows Python ecosystem best practices (support last 4-5 major versions)
+- Scientific libraries often need to support older versions due to institutional constraints
+- CIBW (cibuildwheel) makes building multi-version wheels straightforward
+
+**Alternatives Considered**:
+- Develop in oldest supported version: Limits access to modern features, slower development
+- Support only latest versions: Excludes users on older systems
+- Use conditional code for version-specific features: Increases complexity and maintenance burden
+
+**Consequences**:
+- Development environment uses latest Python features
+- CI must test against multiple Python versions
+- Code must avoid version-specific idioms unless properly guarded
+- Documentation must clearly state supported versions
+- May need to implement compatibility shims for older versions when necessary

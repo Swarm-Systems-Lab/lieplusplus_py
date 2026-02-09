@@ -1,7 +1,7 @@
 [build-system]
 requires = [
     "scikit-build-core>=0.11.6",
-    "pybind11>=2.6.0",
+    "pybind11>=2.13.4",
     "ninja",
     "setuptools-scm>=8.0",
 ]
@@ -40,6 +40,9 @@ dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "pybind11-stubgen>=0.16.0",
+    "cibuildwheel>=2.23.3",
+    "twine",
+    "build"
 ]
 docs = [
     "mkdocs>=1.5.0",
