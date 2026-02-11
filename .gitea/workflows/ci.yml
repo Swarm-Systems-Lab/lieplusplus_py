@@ -15,29 +15,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install system build dependencies
-        run: |
-          sudo apt-get update
-          DEBIAN_FRONTEND=noninteractive sudo apt-get install -y \
-            build-essential \
-            cmake \
-            ninja-build \
-            pkg-config \
-            python3-dev
-
-      - name: Prepare Python environment (dev)
-        run: ./scripts/ci/setup-env.sh --groups dev
+      - name: Setup system and python environment
+        uses: ./.gitea/workflows/_env_setup
 
       # ---- BLOCKING CHECK ----
       - name: Unit tests (gate)
-        run: ./scripts/ci/test.sh
+        run: just test
 
       - name: pre-commit checks
-        run: ./scripts/ci/pre-commit.sh
+        run: just pre-commit
 
       - name: Lint
-        run: ./scripts/ci/lint.sh
+        run: just lint
+
+      - name: Security scans
+        continue-on-error: true
+        run: just security
 
       - name: Typing checks
         continue-on-error: true
-        run: ./scripts/ci/typecheck.sh
+        run: just typecheck

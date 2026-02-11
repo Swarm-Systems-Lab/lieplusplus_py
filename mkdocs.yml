@@ -1,5 +1,5 @@
 site_name: lieplusplus_py
-site_description: Python bindings for the Lie++ C++ library
+site_description: "⚠️ Warning: This project is a work in progress and uses Generative AI for both documentation and code generation. Swarm Systems Lab Python lieplusplus library"
 site_author: Jesús Bautista Villar
 copyright: Copyright &copy; 2024 Jesús Bautista Villar
 
@@ -44,14 +44,8 @@ plugins:
 
 nav:
   - Home: index.md
-  - Golden Path:
-      - Development Setup: golden-path.md
-      - Prerequisites: golden-path/prereqs.md
-      - Toolchain & Build: golden-path/toolchain.md
-      - Architectural Decisions: golden-path/adrs.md
-      - Tutorials: golden-path/tutorials.md
   - Usage: usage.md
   - API Reference: api.md
-  - Examples: examples.md
+  - Golden path: golden-path.md
   - Contributing: contributing.md
   - Troubleshooting: troubleshooting.md

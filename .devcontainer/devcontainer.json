@@ -1,7 +1,12 @@
 {
-  "name": "lieplusplus-py",
+  "name": "lieplusplus",
   "build": {
     "dockerfile": "Dockerfile"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "moby": false
+    }
   },
   "customizations": {
     "vscode": {
@@ -14,7 +19,6 @@
       ]
     }
   },
-  "postCreateCommand": "curl -LsSf https://astral.sh/uv/install.sh | sh && curl --proto \"=https\" --tlsv1.2 -sSf https://just.systems/install.sh | bash",
-  "postStartCommand": "uv sync --all-groups",
+  "postStartCommand": "uv sync --frozen --all-extras && uv run pre-commit install",
   "remoteUser": "vscode"
 }

@@ -16,12 +16,12 @@ wheel.packages = ["src/lieplusplus"]
 version.provider = "scikit_build_core.metadata.setuptools_scm"
 
 [project]
-name = "lieplusplus-py"
+name = "lieplusplus_py"
 dynamic = ["version"]
 description = "Swarm Systems Lab Python lieplusplus library"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "GPL-3.0-or-later" }
+license = { text = "MIT" }
 authors = [
     { name = "Jesús Bautista Villar", email = "jesbauti20@gmail.com" }
 ]
@@ -29,32 +29,53 @@ dependencies = [
     "numpy>=1.19",
 ]
 
-# --- PEP 735: Dependency Groups (The Modern Standard) ---
-[dependency-groups]
+# --- Optional dependencies for tooling ---
+[project.optional-dependencies]
+# Developer default: everything needed to run tox/just locally
 dev = [
+    "tox>=4.18",
+    "tox-uv>=1.9",
     "ruff>=0.9.0",
-    "ty>=0.0.14",
-    "pre-commit>=3.0",
     "semgrep>=1.54.0",
-    "trufflehog==2.2.1",
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "pytest-xdist>=3.5",
+    "pre-commit>=3.0",
+    "ty>=0.0.14",
+    "build>=1.2.2",
+    "cibuildwheel>=2.23.3",
+    "twine>=5.1.1",
+]
+# Targeted extras so tox envs stay reproducible
+lint = [
+    "ruff>=0.9.0",
+    "semgrep>=1.54.0",
+]
+tests = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "pybind11-stubgen>=0.16.0",
-    "cibuildwheel>=2.23.3",
-    "twine",
-    "build"
+    "pytest-xdist>=3.5",
 ]
+pre-commit = [
+    "pre-commit>=3.0",
+]
+type-checking = [
+    "ty>=0.0.14",
+]
+release = [
+    "build>=1.2.2",
+    "cibuildwheel>=2.23.3",
+    "twine>=5.1.1",
+]
+
 docs = [
     "mkdocs>=1.5.0",
     "mkdocs-material>=9.0.0",
     "mkdocstrings[python]>=0.24.0",
 ]
-examples = [
-    "matplotlib>=3.7",
-    "matplotlib-inline>=0.1.6,<0.3",
-    "IPython>=8.0",
-    "ipykernel",
-]
+
+
 
 # --- Hatch Configuration ---
 [tool.hatch.metadata]
@@ -72,6 +93,11 @@ where = ["src"]
 [tool.hatch.build.targets.sdist]
 include = ["src", "README.md", "LICENSE"]
 exclude = ["tests", "examples", "output"]
+
+[[tool.uv.index]]
+name = "internal-repo"
+url = "http://192.168.88.250:3000/api/packages/Swarm-Systems-Lab/pypi/simple/"
+explicit = true
 
 # --- Tool Configuration ---
 [tool.ruff]
@@ -102,6 +128,10 @@ ignore = [
     "F401",
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S603"]
+"scripts/template_prune.py" = ["T201"]
+
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
@@ -112,7 +142,18 @@ indent-style = "space"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-addopts = "-v --strict-markers"
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+]
+# Keep test artifacts only on failure for debugging
+tmp_path_retention_policy = "failed"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
 
 [tool.coverage.run]
 source = ["src/lieplusplus"]
@@ -125,4 +166,138 @@ exclude_lines = [
     "raise AssertionError",
     "raise NotImplementedError",
     "if __name__ == .__main__.:",
+]
+
+# Use uv for fast, reproducible environments
+[tool.tox]
+requires = ["tox-uv>=1.0"]
+skipsdist = true
+env_list = [
+    "pre-commit",
+    "lint",
+    "security",
+    "tests",
+    "tests-fast",
+    "py310",
+    "py311",
+    "py312",
+    "py313",
+    "py314",
+
+    "docs",
+
+]
+
+[tool.tox.env_run_base]
+# Pass environment variables to test environments
+passenv = ["*"]
+
+[tool.tox.env.pre-commit]
+description = "Run pre-commit hooks"
+skip_install = true
+deps = ["-e .[pre-commit]"]
+commands = [
+    ["pre-commit", "run", "--all-files", "--show-diff-on-failure"],
+]
+
+[tool.tox.env.lint]
+description = "Run ruff linting and formatting"
+skip_install = true
+deps = ["-e .[lint]"]
+commands = [
+    ["ruff", "check", "src", "tests"],
+    ["ruff", "format", "--check", "src", "tests"],
+]
+
+[tool.tox.env.security]
+description = "Run semgrep security scans"
+skip_install = true
+deps = ["-e .[lint]"]
+commands = [
+    ["semgrep", "--config", "p/ci", "--config", ".semgrep.yml"],
+]
+
+[tool.tox.env.type-checking]
+description = "Run ty type checks"
+deps = ["-e .[type-checking]"]
+commands = [
+    ["ty", "check"],
+]
+
+[tool.tox.env.tests]
+deps = ["-e .[tests]"]
+commands = [
+    [
+        "pytest",
+        "--cov=lieplusplus",
+        "--cov-report",
+        "term",
+        "--cov-report",
+        "xml:cov.xml",
+    ],
+]
+
+[tool.tox.env.tests-fast]
+deps = ["-e .[tests]"]
+commands = [
+    ["pytest", "tests", "-n", "auto", "-m", "not slow"],
+]
+
+[tool.tox.env.build]
+description = "Build sdist and wheel artifacts"
+skip_install = true
+deps = ["-e .[release]"]
+commands = [
+    ["python", "-m", "build", "--sdist", "--wheel", "--outdir", "dist"],
+]
+
+[tool.tox.env.cibuildwheel]
+description = "Run cibuildwheel for multiplatform wheels"
+skip_install = true
+deps = ["-e .[release]"]
+commands = [
+    ["python", "-m", "cibuildwheel", "--output-dir", "dist"],
+]
+
+[tool.tox.env.py310]
+base_python = ["python3.10"]
+deps = ["-e .[tests]"]
+commands = [
+    ["pytest", "tests"],
+]
+
+[tool.tox.env.py311]
+base_python = ["python3.11"]
+deps = ["-e .[tests]"]
+commands = [
+    ["pytest", "tests"],
+]
+
+[tool.tox.env.py312]
+base_python = ["python3.12"]
+deps = ["-e .[tests]"]
+commands = [
+    ["pytest", "tests"],
+]
+
+[tool.tox.env.py313]
+base_python = ["python3.13"]
+deps = ["-e .[tests]"]
+commands = [
+    ["pytest", "tests"],
+]
+
+[tool.tox.env.py314]
+base_python = ["python3.14"]
+deps = ["-e .[tests]"]
+commands = [
+    ["pytest", "tests"],
+]
+
+
+[tool.tox.env.docs]
+description = "Build the MkDocs site"
+deps = ["-e .[docs]"]
+commands = [
+    ["mkdocs", "build", "--clean", "--strict"],
 ]
