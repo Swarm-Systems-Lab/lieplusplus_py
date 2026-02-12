@@ -1,93 +1,124 @@
 # lieplusplus_py
 
-> **Warning — AI-generated content:** This documentation page was largely
-> generated with the assistance of an AI. Please verify examples and
-> installation instructions before relying on them in critical workflows.
+Welcome to the documentation for **lieplusplus_py**!
 
-High-performance Python bindings for the Lie++ C++ library, providing efficient operations on Lie groups commonly used in robotics, computer vision, and geometric computing.
+Swarm Systems Lab Python lieplusplus library
 
-## What is lieplusplus_py?
+## Overview
 
-lieplusplus_py brings the power of C++ Lie group mathematics to Python with zero-copy NumPy integration. It supports:
+This project follows the **Swarm Systems Lab (SSL) Golden Path** - a standardized, battle-tested approach to Python project development that emphasizes:
 
-- **SO(3)**: 3D rotations
-- **SE(3)**: 3D rigid body transformations (rotation + translation)
-- **SE₂(3)**: Extended rigid body transformations (rotation + translation + velocity)
-
-Built on top of the [Lie++](https://github.com/jesusBV20/Lie-plusplus) library, it offers:
-
-- 🚀 **Performance**: C++ speed with Python convenience
-- 🔢 **NumPy Integration**: Seamless array operations
-- 🧮 **Mathematical Rigor**: Verified group properties and Jacobians
-- 🛠️ **Easy Installation**: Automatic dependency management
+- **⚡ Speed**: Lightning-fast tooling with `uv` and `ruff`
+- **🔒 Quality**: Automated linting, testing, and security scanning
+- **📦 Reproducibility**: Consistent environments across local dev, CI, and production
+- **📚 Documentation**: Auto-generated API docs and comprehensive guides
+- **🚀 Developer Experience**: One-command setup, clear task runners, and DevContainer support
 
 ## Quick Start
 
-```python
-import numpy as np
-import lieplusplus as lie
-
-# Create a 3D rotation
-R = lie.SO3.exp(np.array([0.1, 0.2, 0.3]))
-print("Rotation matrix:")
-print(R.matrix())
-
-# Create a 3D pose
-T = lie.SE3.exp(np.array([0.1, 0.2, 0.3, 1.0, 2.0, 3.0]))
-print("Transformation matrix:")
-print(T.matrix())
-
-# Compose transformations
-T2 = lie.SE3.exp(np.array([0.0, 0.0, 0.0, 0.5, 0.0, 0.0]))
-result = T * T2
-print("Composed transformation:")
-print(result.matrix())
-```
-
-## Installation
+Get up and running in minutes:
 
 ```bash
-pip install lieplusplus-py
-```
-
-For development:
-```bash
-git clone https://github.com/jesusBV20/lieplusplus_py.git
+# Clone the repository
+git clone https://gitea.lyapunov.local/Swarm-Systems-Lab/lieplusplus_py
 cd lieplusplus_py
-uv sync --group dev
-pip install -e .
+
+# One-command setup (installs uv if needed, creates .venv, installs deps)
+just setup
+
+# Run tests to verify everything works
+just test
+
+# Start coding!
+uv run python -c "import lieplusplus; print('Ready to go!')"
 ```
 
-## Architecture
+**Next steps:**
+- 📖 See all available commands: `just --list`
+- 🚀 Learn the workflows: [Usage Guide](usage.md)
+- 🛠️ Understand the toolchain: [Golden Path](golden-path.md)
 
-lieplusplus_py is built as a hybrid Python/C++ package:
 
-- **Python Layer**: Pure Python interface with type hints and documentation
-- **C++ Bindings**: pybind11 generates efficient bindings to Lie++ classes
-- **Core Library**: Lie++ provides the mathematical implementations
-- **Dependencies**: Eigen3 for linear algebra, automatic fetching if needed
+## Documentation Structure
 
-The package uses scikit-build-core for reproducible builds and setuptools-scm for versioning.
+- **[Usage Guide](usage.md)**: Practical usage instructions, common workflows, and just tasks reference
+- **[Golden Path](golden-path.md)**: Development approach, toolchain explanations, and complete just tasks documentation
+- **[Contributing](contributing.md)**: Guidelines for contributing code, tests, and documentation
+- **[API Reference](api.md)**: Complete API documentation auto-generated from docstrings
+- **[Troubleshooting](troubleshooting.md)**: Solutions to common issues
+
 
 ## Key Features
 
-- **Group Operations**: Exponentiation, logarithm, composition, inversion
-- **Jacobians**: Analytical derivatives for optimization
-- **NumPy Compatibility**: All operations work with NumPy arrays
-- **Type Safety**: Full type hints and runtime checks
-- **Cross-Platform**: Works on Linux, macOS, and Windows
+✨ **Modern Python Tooling**
+:   Built with `uv`, `just`, `ruff`, and `hatch` for a streamlined developer experience
 
-## Use Cases
+🧪 **Quality Assurance**
+:   Pre-configured testing with `pytest`, type checking with `mypy`, and security scanning with `semgrep`
 
-- **Robotics**: Forward/inverse kinematics, motion planning
-- **Computer Vision**: Structure from motion, SLAM
-- **Geometric Computing**: Optimization on manifolds
-- **Research**: Prototyping geometric algorithms
+📦 **Standardized Structure**
+:   Follows Python best practices with `src/` layout and PEP 517/660 compliance
 
-## Contributing
+🔄 **CI/CD Ready**
+:   Gitea Workflows (GitHub Actions compatible) for automated testing and deployment
 
-We welcome contributions! See the [Golden Path](golden-path.md) for development setup and [Contributing](contributing.md) for guidelines.
 
-## License
+🐳 **DevContainer Support**
+:   One-click development environment with all dependencies pre-configured
 
-GPL-3.0-or-later
+
+
+📚 **Beautiful Documentation**
+:   Auto-generated docs with MkDocs Material theme and `mkdocstrings`
+
+
+## Project Philosophy
+
+lieplusplus_py embraces the SSL Golden Path philosophy:
+
+1. **Consistency Over Configuration**: Standardized tooling reduces cognitive load
+2. **Automation Over Repetition**: Let CI handle quality checks automatically
+3. **Developer Experience First**: Fast tools, clear documentation, easy onboarding
+4. **Reproducibility Everywhere**: Identical environments from dev to production
+
+## Common Tasks
+
+Get productive immediately with these essential commands:
+
+```bash
+# Development
+just setup           # Initial environment setup
+just test            # Run full test suite
+just test-fast       # Quick parallel tests
+just lint            # Check code style
+just typecheck       # Check types
+just check-all       # Full CI simulation
+
+# Building
+just build           # Build package
+
+# Documentation
+just docs            # Start doc server (http://localhost:8000)
+just docs-build      # Build static docs
+
+```
+
+**Pro tip**: Run `just --list` to see all available commands, or check the [Usage Guide](usage.md) for detailed workflows.
+
+## Next Steps
+
+- 🚀 Read the [Usage Guide](usage.md) for practical examples and workflows
+- 🛠️ Explore the [Golden Path](golden-path.md) to understand the development philosophy
+- 🤝 Review [Contributing Guidelines](contributing.md) before making changes
+- 📚 Browse the [API Reference](api.md) for detailed documentation
+
+## Support & Community
+
+- 🐛 **Issues**: Report bugs or request features on [https://gitea.lyapunov.local/Swarm-Systems-Lab/lieplusplus_py](https://gitea.lyapunov.local/Swarm-Systems-Lab/lieplusplus_py/issues)
+- 📧 **Contact**: jesbauti20@gmail.com
+- 📄 **License**: MIT
+
+---
+
+**Ready to dive in?** Start with the [Golden Path](golden-path.md) to set up your development environment!
+s

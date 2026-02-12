@@ -1,0 +1,13 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: 1cc0eca
+_src_path: ../ssl_py_template
+author_email: jesbauti20@gmail.com
+author_name: Jesús Bautista Villar
+description: Swarm Systems Lab Python lieplusplus library
+include_docs: true
+include_examples: false
+license: MIT
+package_name: lieplusplus
+project_name: lieplusplus_py
+repo_url: https://gitea.lyapunov.local/Swarm-Systems-Lab/lieplusplus_py
+use_docker: true

@@ -2,19 +2,36 @@
 
 # Setup the development environment (dev deps only by default)
 setup:
-    ./scripts/ci/setup-env.sh
+    uv lock
+    ./scripts/ci/setup-env.sh --extras dev,lint,tests,type-checking,pre-commit
 
 # Sync all dependency groups
 sync:
-    ./scripts/ci/setup-env.sh --all-groups
+    ./scripts/ci/setup-env.sh --all-extras
+
+# Prune files not in template (run after copier update)
+template-prune:
+    python3 scripts/template_prune.py
 
 # Build and install the package in development mode
 build:
-    uv build
+    uv run tox -e build
+
+# Build wheels (cibuildwheel) for release
+build-release:
+    ./scripts/release/build_publish.sh
+
+# Publish artifacts with uv (requires UV_PUBLISH_* env vars)
+publish:
+    ./scripts/release/publish.sh
+
+# Publish artifacts with twine (CI-friendly; requires TWINE_* env vars)
+publish-ci:
+    ./scripts/release/publish_ci.sh
 
 # Clean build artifacts
 clean:
-    rm -rf build dist src/lieplusplus.egg-info .pytest_cache .ruff_cache __pycache__ .venv
+    rm -rf build dist src/lieplusplus.egg-info .pytest_cache .ruff_cache __pycache__ .venv site cov.xml .coverage
     uv clean
 
 # Run the basic usage example
@@ -23,19 +40,15 @@ example:
 
 # Run pre-commit checks
 pre-commit:
-    ./scripts/ci/pre-commit.sh
+    uv run tox -e pre-commit
 
 # Run lint checks
 lint:
-    ./scripts/ci/lint.sh
+    uv run tox -e lint
 
 # Run type checks
 typecheck:
-    ./scripts/ci/typecheck.sh
-
-# Run the full local CI pipeline
-ci-local:
-    ./scripts/ci/run_locally.sh
+    uv run tox -e type-checking
 
 # Test CI workflow locally with act
 act:
@@ -43,23 +56,47 @@ act:
 
 # Run tests (fast, no coverage)
 test:
-    ./scripts/ci/test.sh
+    uv run tox -e tests
+
+# Run tests in parallel, skip slow tests (fast)
+test-fast:
+    uv run tox -e tests-fast
+
+# Run specific test
+test-one TEST:
+    uv run pytest tests/ -v -k
+
+# Run tests across multiple Python versions
+test-multi-py:
+    uv run tox -e py310,py311,py312,py313,py314
+
+# List all tox environments
+list:
+    uv run tox list
 
 # Run security scans
 security:
-    ./scripts/ci/semgrep.sh
-    ./scripts/ci/trufflehog.sh
+    uv run tox -e security
 
-# Start the documentation server (installs docs deps on demand)
+
+# Start the documentation server (serves while watching for changes)
 docs:
-    ./scripts/ci/setup-env.sh --groups dev,docs
-    uv run mkdocs serve
+    uv run --with '.[docs]' mkdocs serve --livereload
 
 # Build documentation
 docs-build:
-    ./scripts/ci/setup-env.sh --groups dev,docs
-    uv run mkdocs build
+    uv run tox -e docs
+
 
 # Full CI simulation (do this before pushing!)
-check-all: lint test
-    uv run ty check
+check-all: lint security test
+    uv run tox -e type-checking
+    uv run tox -e pre-commit
+
+# Clean documentation build artifacts
+clean-docs:
+    rm -rf site
+
+# Validate built documentation
+validate-docs:
+    ./scripts/docs/validate_docs.sh

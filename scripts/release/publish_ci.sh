@@ -4,6 +4,11 @@ set -euo pipefail
 # CI publish script — use twine with credentials from environment
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT_DIR"
+
+if [ ! -d .venv ]; then
+	./scripts/ci/setup-env.sh --extras dev,release
+fi
+
 . .venv/bin/activate
 
 if [ -z "${TWINE_USERNAME-}" ] || [ -z "${TWINE_PASSWORD-}" ] || [ -z "${TWINE_REPOSITORY_URL-}" ]; then

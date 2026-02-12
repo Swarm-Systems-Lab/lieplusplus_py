@@ -5,24 +5,35 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT_DIR"
 
-GROUP_LIST=("dev")
+EXTRA_LIST=("dev" "lint" "tests" "type-checking" "pre-commit")
+ALL_EXTRAS=0
 FROZEN=1
 EXTRA_PACKAGES=()
 
 usage() {
-	echo "Usage: $0 [--groups <comma-separated>] [--all-groups] [--no-frozen] [--with <pkg> ...]" >&2
+	echo "Usage: $0 [--extras <comma-separated>] [--all-extras] [--no-frozen] [--with <pkg> ...]" >&2
 	exit 1
 }
 
 while [[ $# -gt 0 ]]; do
 	case "$1" in
 		--groups)
+			# Backward compatibility shim for old flag name
 			[[ $# -ge 2 ]] || usage
-			IFS=',' read -r -a GROUP_LIST <<< "$2"
+			IFS=',' read -r -a EXTRA_LIST <<< "$2"
+			shift 2
+			;;
+		--extras)
+			[[ $# -ge 2 ]] || usage
+			IFS=',' read -r -a EXTRA_LIST <<< "$2"
 			shift 2
 			;;
 		--all-groups)
-			GROUP_LIST=()
+			ALL_EXTRAS=1
+			shift
+			;;
+		--all-extras)
+			ALL_EXTRAS=1
 			shift
 			;;
 		--no-frozen)
@@ -46,6 +57,12 @@ if ! command -v uv >/dev/null 2>&1; then
 	export PATH="$HOME/.local/bin:$PATH"
 fi
 
+# Install just if not available
+if ! command -v just >/dev/null 2>&1; then
+	curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/.local/bin
+	export PATH="$HOME/.local/bin:$PATH"
+fi
+
 # Create uv-managed venv if it doesn't exist
 if [ ! -d .venv ]; then
 	uv venv .venv
@@ -57,11 +74,11 @@ fi
 SYNC_ARGS=(sync)
 ((FROZEN)) && SYNC_ARGS+=("--frozen")
 
-if [ ${#GROUP_LIST[@]} -eq 0 ]; then
-	SYNC_ARGS+=("--all-groups")
-else
-	for group in "${GROUP_LIST[@]}"; do
-		SYNC_ARGS+=("--group" "$group")
+if ((ALL_EXTRAS)); then
+	SYNC_ARGS+=("--all-extras")
+elif [ ${#EXTRA_LIST[@]} -gt 0 ]; then
+	for extra in "${EXTRA_LIST[@]}"; do
+		SYNC_ARGS+=("--extra" "$extra")
 	done
 fi
 

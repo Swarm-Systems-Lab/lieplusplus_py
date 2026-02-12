@@ -1,126 +1,369 @@
 # Usage Guide
 
-This guide provides an overview of how to use lieplusplus_py for common tasks.
+This guide covers how to use lieplusplus_py effectively, from installation to common workflows.
 
 ## Installation
 
+### For End Users
+
+Install the latest stable version from PyPI:
+
 ```bash
-pip install lieplusplus-py
+pip install lieplusplus_py
 ```
 
-## Basic Concepts
+Or with `uv` (faster):
 
-lieplusplus_py provides three main Lie groups:
+```bash
+uv pip install lieplusplus_py
+```
 
-- **SO(3)**: Rotations in 3D space
-- **SE(3)**: Rigid body transformations (rotation + translation)
-- **SE₂(3)**: Extended transformations (rotation + translation + velocity)
+### For Developers
 
-All classes inherit from `LieGroup` and support common operations.
+Clone and set up the development environment:
 
-## Core Operations
+```bash
+# Clone the repository
+git clone https://gitea.lyapunov.local/Swarm-Systems-Lab/lieplusplus_py
+cd lieplusplus_py
 
-### Creating Transformations
+# One-command setup
+just setup
+
+# Verify installation
+uv run python -c "import lieplusplus; print(lieplusplus.__version__)"
+```
+
+## Basic Usage
+
+### Importing the Package
 
 ```python
-import lieplusplus as lie
-import numpy as np
+import lieplusplus
 
-# Identity elements
-R = lie.SO3()  # Identity rotation
-T = lie.SE3()  # Identity pose
+# Access package version
+print(lieplusplus.__version__)
 
-# From exponential map
-omega = np.array([0.1, 0.2, 0.3])  # Rotation vector
-R = lie.SO3.exp(omega)
-
-xi = np.array([0.1, 0.2, 0.3, 1.0, 2.0, 3.0])  # 6D twist
-T = lie.SE3.exp(xi)
+# Import specific modules
+from lieplusplus.core import CoreClass
+from lieplusplus.utils import helper_function
 ```
 
-### Composition and Inversion
+### Common Workflows
+
+#### Example 1: Basic Usage
 
 ```python
-# Compose transformations
-T1 = lie.SE3.exp(np.array([0, 0, 0, 1, 0, 0]))  # Translation
-T2 = lie.SE3.exp(np.array([0.1, 0, 0, 0, 0, 0]))  # Rotation
-T_composed = T1 * T2
+from lieplusplus import example_function
 
-# Inverse
-T_inv = T.inv()
+# Use the function
+result = example_function(input_data)
+print(result)
 ```
 
-### Applying Transformations
+#### Example 2: Advanced Usage
 
 ```python
-# Transform points
-point = np.array([1.0, 2.0, 3.0])
-transformed = T * point
+from lieplusplus.core import CoreClass
 
-# Transform other transformations
-T_relative = T1 * T2.inv()
+# Initialize with configuration
+processor = CoreClass(
+    param1="value1",
+    param2=42
+)
+
+# Process data
+output = processor.process(data)
 ```
 
-## Advanced Features
+## Development Workflows
 
-### Jacobians and Derivatives
+### Running Tests
 
-```python
-# Left Jacobian of SO(3)
-J = lie.SO3.left_jacobian(omega)
+lieplusplus_py uses `just` for task automation. Here are the most common test commands:
 
-# Right Jacobian
-J_right = lie.SO3.right_jacobian(omega)
+```bash
+# Run all tests with coverage (what CI runs)
+just test
+
+# Quick test run (parallel, skips slow tests)
+just test-fast
+
+# Run a specific test
+just test-one test_my_feature
+
+# Test across all supported Python versions
+just test-multi-py
 ```
 
-### Adjoint Matrices
+**Direct pytest usage** (if you need more control):
 
-```python
-# For computing derivatives through composition
-adj = T.Adjoint()
+```bash
+# Run all tests
+uv run pytest
+
+# Run specific test file
+uv run pytest tests/test_core.py
+
+# Run specific test function
+uv run pytest tests/test_core.py::test_specific_function
+
+# Run with verbose output
+uv run pytest -vv
+
+# Run with coverage report
+uv run pytest --cov=lieplusplus --cov-report=html
+
+# Run in parallel (faster)
+uv run pytest -n auto
+
+# Run only failed tests from last run
+uv run pytest --lf
+
+# Drop into debugger on failure
+uv run pytest --pdb
 ```
 
-## Integration Patterns
+### Code Quality Checks
 
-### With NumPy
+Ensure your code meets quality standards before committing:
 
-```python
-# Vectorized operations
-omegas = np.random.randn(10, 3)
-rotations = [lie.SO3.exp(omega) for omega in omegas]
+```bash
+# Run linting (ruff check + format check)
+just lint
 
-# Batch processing
-points = np.random.randn(100, 3)
-transformed_points = np.array([T * p for p in points])
+# Run type checking (mypy)
+just typecheck
+
+# Run security scanning (semgrep)
+just security
+
+# Run pre-commit hooks manually
+just pre-commit
+
+# Run everything (what CI does)
+just check-all
 ```
 
-### With Optimization Libraries
+**Manual ruff usage** (for auto-fixes):
 
-```python
-import scipy.optimize
+```bash
+# Auto-fix linting issues
+uv run ruff check --fix .
 
-def cost_function(xi):
-    T = lie.SE3.exp(xi)
-    # Compute cost based on T
-    return cost
+# Format code
+uv run ruff format .
 
-# Optimize in tangent space
-result = scipy.optimize.minimize(cost_function, np.zeros(6))
-optimal_T = lie.SE3.exp(result.x)
+# Check specific file
+uv run ruff check src/lieplusplus/myfile.py
 ```
 
-## Best Practices
+### Building the Package
 
-1. **Use exponential/logarithm**: Work in tangent space for optimization
-2. **Batch operations**: Process multiple transformations together
-3. **Type consistency**: Use consistent NumPy dtypes (float64 recommended)
-4. **Validation**: Check mathematical properties in tests
+```bash
+# Build sdist and wheel
+just build
 
-## Common Patterns
+# Output appears in dist/
+ls -lh dist/
+```
 
-- **Kinematics**: Chain transformations for forward kinematics
-- **SLAM**: Compose poses for trajectory estimation
-- **Calibration**: Optimize transformations between coordinate frames
-- **Motion planning**: Interpolate in tangent space
 
-See [Examples](examples.md) for detailed code samples.
+### Working with Documentation
+
+```bash
+# Start local documentation server (http://localhost:8000)
+just docs
+
+# Build static documentation
+just docs-build
+
+# Validate documentation
+just validate-docs
+```
+
+Documentation is written in Markdown in the `docs/` directory. The API reference is automatically generated from docstrings using `mkdocstrings`.
+
+
+## Environment Management
+
+### Using uv (Recommended)
+
+`uv` is a fast Python package manager written in Rust. It's the recommended way to manage dependencies:
+
+```bash
+# Create/sync environment (handled by just setup)
+uv sync
+
+# Install additional packages
+uv add package-name
+
+# Install specific extras
+uv sync --extra dev
+uv sync --extra tests
+
+# Install all extras
+uv sync --all-extras
+
+# Run commands in the environment
+uv run python script.py
+uv run pytest
+
+# Update dependencies
+uv lock --upgrade
+```
+
+### Virtual Environment Activation
+
+While `uv run` is convenient, you can also activate the virtual environment:
+
+```bash
+# Activate (Linux/macOS)
+source .venv/bin/activate
+
+# Activate (Windows)
+.venv\Scripts\activate
+
+# Now you can run commands directly
+python script.py
+pytest
+
+# Deactivate when done
+deactivate
+```
+
+### Dependency Management
+
+Dependencies are defined in `pyproject.toml`:
+
+- **Runtime dependencies**: `[project.dependencies]`
+- **Optional extras**: `[project.optional-dependencies]`
+  - `dev`: Development tools (tox, ruff, etc.)
+  - `tests`: Testing tools (pytest, pytest-cov, etc.)
+  - `lint`: Linting tools (ruff, semgrep)
+  - `type-checking`: Type checking tools (ty/mypy)
+  - `pre-commit`: Pre-commit hooks
+
+  - `docs`: Documentation tools (mkdocs, mkdocstrings)
+
+
+
+```bash
+# Lock dependencies (creates/updates uv.lock)
+uv lock
+
+# Update to latest compatible versions
+uv lock --upgrade
+
+# Add a new dependency
+uv add package-name
+
+# Add a dev dependency
+uv add --group dev package-name
+```
+
+## Configuration
+
+### Tool Configuration
+
+All tool configuration is in `pyproject.toml`:
+
+- **Ruff**: `[tool.ruff]` - linting and formatting
+- **Pytest**: `[tool.pytest.ini_options]` - test configuration
+- **Coverage**: `[tool.coverage.*]` - coverage settings
+- **Tox**: `[tool.tox.*]` - test automation
+- **Hatch**: `[tool.hatch.*]` - build configuration
+
+### Environment Variables
+
+Some tasks use environment variables:
+
+- `UV_PUBLISH_TOKEN`: PyPI token for `just publish`
+- `UV_PUBLISH_URL`: PyPI URL for `just publish`
+- `TWINE_USERNAME`: PyPI username for `just publish-ci`
+- `TWINE_PASSWORD`: PyPI password for `just publish-ci`
+
+## Troubleshooting
+
+### Common Issues
+
+**Tests fail locally but pass in CI**
+```bash
+# Clean environment and rebuild
+just clean
+rm -rf .venv uv.lock
+just setup
+just test
+```
+
+**Linting failures**
+```bash
+# Auto-fix most issues
+uv run ruff check --fix .
+uv run ruff format .
+```
+
+**Type checking errors**
+```bash
+# Run type checker with verbose output
+uv run ty check --verbose
+```
+
+**Import errors**
+```bash
+# Ensure package is installed in editable mode
+uv sync
+
+# Or manually
+uv pip install -e .
+```
+
+**Slow tests**
+```bash
+# Run tests in parallel
+just test-fast
+
+# Or directly with pytest
+uv run pytest -n auto
+```
+
+### Getting Help
+
+- 📖 **Documentation**: Check [Golden Path](golden-path.md) and [Contributing](contributing.md)
+- 🐛 **Issues**: Search or create an issue at [https://gitea.lyapunov.local/Swarm-Systems-Lab/lieplusplus_py/issues](https://gitea.lyapunov.local/Swarm-Systems-Lab/lieplusplus_py/issues)
+- 💬 **Discussions**: Ask questions at [https://gitea.lyapunov.local/Swarm-Systems-Lab/lieplusplus_py/discussions](https://gitea.lyapunov.local/Swarm-Systems-Lab/lieplusplus_py/discussions)
+- 📧 **Email**: Contact jesbauti20@gmail.com
+
+## Next Steps
+
+- Review the [API Reference](api.md) for detailed module documentation
+- Check out [Contributing Guidelines](contributing.md) to contribute
+- Explore the [Golden Path](golden-path.md) to understand the development philosophy
+
+## Quick Reference
+
+### Essential Commands
+
+| Command | Purpose |
+|---------|----------|
+| `just setup` | Initial setup (run once after cloning) |
+| `just test` | Run full test suite |
+| `just test-fast` | Quick test run (parallel, skip slow) |
+| `just lint` | Check code style |
+| `just typecheck` | Check types |
+| `just security` | Run security scans |
+| `just check-all` | Full CI simulation |
+| `just build` | Build package |
+
+| `just docs` | Start doc server |
+
+| `just clean` | Remove build artifacts |
+
+### Quick Tips
+
+- 🔧 **List all commands**: `just --list` or `just`
+- 🧪 **Run single test**: `just test-one <test_name>`
+- 🔍 **Verbose pytest**: `uv run pytest -vv`
+- 🐛 **Debug test**: `uv run pytest --pdb`
+- ⚡ **Parallel tests**: `uv run pytest -n auto`
+- 🔄 **Re-run failed**: `uv run pytest --lf`
