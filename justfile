@@ -7,7 +7,7 @@ setup:
 
 # Sync all dependency groups
 sync:
-    ./scripts/ci/setup-env.sh --all-extras
+    uv sync --frozen
 
 # Prune files not in template (run after copier update)
 template-prune:
@@ -15,7 +15,7 @@ template-prune:
 
 # Build and install the package in development mode
 build:
-    uv run tox -e build
+    uv build
 
 # Build wheels (cibuildwheel) for release
 build-release:
@@ -31,7 +31,7 @@ publish-ci:
 
 # Clean build artifacts
 clean:
-    rm -rf build dist src/lieplusplus.egg-info .pytest_cache .ruff_cache __pycache__ .venv site cov.xml .coverage
+    rm -rf build dist src/lieplusplus.egg-info .pytest_cache .ruff_cache __pycache__ .venv site cov.xml .coverage .tox
     uv clean
 
 # Run the basic usage example
@@ -40,15 +40,16 @@ example:
 
 # Run pre-commit checks
 pre-commit:
-    uv run tox -e pre-commit
+    uv run pre-commit run --all-files --show-diff-on-failure
 
 # Run lint checks
 lint:
-    uv run tox -e lint
+    uv run ruff format .
+    uv run ruff check . --fix
 
 # Run type checks
 typecheck:
-    uv run tox -e type-checking
+    uv run ty check src/lieplusplus
 
 # Test CI workflow locally with act
 act:
@@ -76,7 +77,7 @@ list:
 
 # Run security scans
 security:
-    uv run tox -e security
+    uv run semgrep --config p/ci --config .semgrep.yml
 
 
 # Start the documentation server (serves while watching for changes)

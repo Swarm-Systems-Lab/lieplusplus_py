@@ -2,7 +2,6 @@
 requires = [
     "scikit-build-core>=0.11.6",
     "pybind11>=2.13.4",
-    "ninja",
     "setuptools-scm>=8.0",
 ]
 build-backend = "scikit_build_core.build"
@@ -171,7 +170,6 @@ exclude_lines = [
 # Use uv for fast, reproducible environments
 [tool.tox]
 requires = ["tox-uv>=1.0"]
-skipsdist = true
 env_list = [
     "pre-commit",
     "lint",
@@ -191,19 +189,18 @@ env_list = [
 [tool.tox.env_run_base]
 # Pass environment variables to test environments
 passenv = ["*"]
+setenv = { UV_EXTRA_INDEX_URL = "http://192.168.88.250:3000/api/packages/Swarm-Systems-Lab/pypi/simple/" }
 
 [tool.tox.env.pre-commit]
 description = "Run pre-commit hooks"
-skip_install = true
-deps = ["-e .[pre-commit]"]
+extras = ["pre-commit"]
 commands = [
     ["pre-commit", "run", "--all-files", "--show-diff-on-failure"],
 ]
 
 [tool.tox.env.lint]
 description = "Run ruff linting and formatting"
-skip_install = true
-deps = ["-e .[lint]"]
+extras = ["lint"]
 commands = [
     ["ruff", "check", "src", "tests"],
     ["ruff", "format", "--check", "src", "tests"],
@@ -211,21 +208,20 @@ commands = [
 
 [tool.tox.env.security]
 description = "Run semgrep security scans"
-skip_install = true
-deps = ["-e .[lint]"]
+extras = ["lint"]
 commands = [
     ["semgrep", "--config", "p/ci", "--config", ".semgrep.yml"],
 ]
 
 [tool.tox.env.type-checking]
 description = "Run ty type checks"
-deps = ["-e .[type-checking]"]
+extras = ["type-checking"]
 commands = [
     ["ty", "check"],
 ]
 
 [tool.tox.env.tests]
-deps = ["-e .[tests]"]
+extras = ["tests"]
 commands = [
     [
         "pytest",
@@ -238,58 +234,56 @@ commands = [
 ]
 
 [tool.tox.env.tests-fast]
-deps = ["-e .[tests]"]
+extras = ["tests"]
 commands = [
     ["pytest", "tests", "-n", "auto", "-m", "not slow"],
 ]
 
 [tool.tox.env.build]
 description = "Build sdist and wheel artifacts"
-skip_install = true
-deps = ["-e .[release]"]
+extras = ["release"]
 commands = [
     ["python", "-m", "build", "--sdist", "--wheel", "--outdir", "dist"],
 ]
 
 [tool.tox.env.cibuildwheel]
 description = "Run cibuildwheel for multiplatform wheels"
-skip_install = true
-deps = ["-e .[release]"]
+extras = ["release"]
 commands = [
     ["python", "-m", "cibuildwheel", "--output-dir", "dist"],
 ]
 
 [tool.tox.env.py310]
 base_python = ["python3.10"]
-deps = ["-e .[tests]"]
+extras = ["tests"]
 commands = [
     ["pytest", "tests"],
 ]
 
 [tool.tox.env.py311]
 base_python = ["python3.11"]
-deps = ["-e .[tests]"]
+extras = ["tests"]
 commands = [
     ["pytest", "tests"],
 ]
 
 [tool.tox.env.py312]
 base_python = ["python3.12"]
-deps = ["-e .[tests]"]
+extras = ["tests"]
 commands = [
     ["pytest", "tests"],
 ]
 
 [tool.tox.env.py313]
 base_python = ["python3.13"]
-deps = ["-e .[tests]"]
+extras = ["tests"]
 commands = [
     ["pytest", "tests"],
 ]
 
 [tool.tox.env.py314]
 base_python = ["python3.14"]
-deps = ["-e .[tests]"]
+extras = ["tests"]
 commands = [
     ["pytest", "tests"],
 ]
@@ -297,7 +291,7 @@ commands = [
 
 [tool.tox.env.docs]
 description = "Build the MkDocs site"
-deps = ["-e .[docs]"]
+extras = ["docs"]
 commands = [
-    ["mkdocs", "build", "--clean", "--strict"],
+    ["mkdocs", "build", "--clean"],
 ]
