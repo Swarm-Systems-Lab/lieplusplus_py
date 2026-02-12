@@ -96,7 +96,7 @@ exclude = ["tests", "examples", "output"]
 [[tool.uv.index]]
 name = "internal-repo"
 url = "http://192.168.88.250:3000/api/packages/Swarm-Systems-Lab/pypi/simple/"
-explicit = true
+explicit = false
 
 # --- Tool Configuration ---
 [tool.ruff]
