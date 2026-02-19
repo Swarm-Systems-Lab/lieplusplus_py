@@ -4,7 +4,7 @@
 set -e  # Exit on any error
 
 echo "Installing dependencies and building package..."
-uv sync --group dev
+uv sync --all-extras --frozen
 uv pip install -e .
 
 echo "Generating stubs for lieplusplus._core..."
