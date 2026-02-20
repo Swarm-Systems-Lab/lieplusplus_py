@@ -7,7 +7,7 @@ setup:
 
 # Sync all dependency groups
 sync:
-    uv sync --frozen
+    uv sync --frozen --all-extras
 
 # Prune files not in template (run after copier update)
 template-prune:
@@ -32,7 +32,6 @@ publish-ci:
 # Clean build artifacts
 clean:
     rm -rf build dist src/lieplusplus.egg-info .pytest_cache .ruff_cache __pycache__ .venv site cov.xml .coverage .tox
-    uv clean
 
 # Run the basic usage example
 example:

@@ -41,6 +41,7 @@ dev = [
     "pytest-xdist>=3.5",
     "pre-commit>=3.0",
     "ty>=0.0.14",
+    "cibuildwheel>=2.23.3",
     "build>=1.2.2",
     "twine>=5.1.1",
 ]
@@ -62,6 +63,7 @@ type-checking = [
     "ty>=0.0.14",
 ]
 release = [
+    "cibuildwheel>=2.23.3",
     "build>=1.2.2",
     "twine>=5.1.1",
 ]
