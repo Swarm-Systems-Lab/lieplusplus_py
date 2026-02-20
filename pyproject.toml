@@ -19,7 +19,7 @@ name = "lieplusplus_py"
 dynamic = ["version"]
 description = "Swarm Systems Lab Python lieplusplus library"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [
     { name = "Jesús Bautista Villar", email = "jesbauti20@gmail.com" }
@@ -42,7 +42,6 @@ dev = [
     "pre-commit>=3.0",
     "ty>=0.0.14",
     "build>=1.2.2",
-    "cibuildwheel>=2.23.3",
     "twine>=5.1.1",
 ]
 # Targeted extras so tox envs stay reproducible
@@ -64,7 +63,6 @@ type-checking = [
 ]
 release = [
     "build>=1.2.2",
-    "cibuildwheel>=2.23.3",
     "twine>=5.1.1",
 ]
 
@@ -72,6 +70,7 @@ docs = [
     "mkdocs>=1.5.0",
     "mkdocs-material>=9.0.0",
     "mkdocstrings[python]>=0.24.0",
+    "pymdown-extensions>=10.0",
 ]
 
 
@@ -96,13 +95,13 @@ exclude = ["tests", "examples", "output"]
 [[tool.uv.index]]
 name = "internal-repo"
 url = "http://gitea.lyapunov.local/api/packages/Swarm-Systems-Lab/pypi/simple/"
-explicit = true
 
 # --- Tool Configuration ---
 [tool.ruff]
 line-length = 100
-exclude = ["output"]
-target-version = "py310" # Checks python 3.10 works
+# Exclude generated type stubs so formatters/linters don't reformat them
+exclude = ["output", "*.pyi"]
+target-version = "py312" # Checks python 3.12 works
 
 [tool.ruff.lint]
 select = [
@@ -167,6 +166,9 @@ exclude_lines = [
     "if __name__ == .__main__.:",
 ]
 
+[tool.ty.src]
+exclude = ["src/**/*.pyi"]
+
 # Use uv for fast, reproducible environments
 [tool.tox]
 requires = ["tox-uv>=1.0"]
@@ -176,8 +178,6 @@ env_list = [
     "security",
     "tests",
     "tests-fast",
-    "py310",
-    "py311",
     "py312",
     "py313",
     "py314",
@@ -251,20 +251,6 @@ description = "Run cibuildwheel for multiplatform wheels"
 extras = ["release"]
 commands = [
     ["python", "-m", "cibuildwheel", "--output-dir", "dist"],
-]
-
-[tool.tox.env.py310]
-base_python = ["python3.10"]
-extras = ["tests"]
-commands = [
-    ["pytest", "tests"],
-]
-
-[tool.tox.env.py311]
-base_python = ["python3.11"]
-extras = ["tests"]
-commands = [
-    ["pytest", "tests"],
 ]
 
 [tool.tox.env.py312]
