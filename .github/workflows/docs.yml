@@ -1,0 +1,14 @@
+name: Docs
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  docs:
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: Swarm-Systems-Lab/ssl_ci/.github/workflows/docs.yml@v1

@@ -9,5 +9,5 @@ include_examples: false
 license: MIT
 package_name: lieplusplus
 project_name: lieplusplus_py
-repo_url: https://gitea.lyapunov.local/Swarm-Systems-Lab/lieplusplus_py
+repo_url: https://github.com/Swarm-Systems-Lab/lieplusplus_py
 use_docker: true
