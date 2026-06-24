@@ -28,7 +28,7 @@ This project follows the **SSL Golden Path** for streamlined Python development.
 
 ```bash
 # Clone the repository
-git clone https://gitea.lyapunov.local/Swarm-Systems-Lab/lieplusplus_py
+git clone https://github.com/Swarm-Systems-Lab/lieplusplus_py
 cd lieplusplus_py
 
 # One-command setup (installs uv, creates .venv, installs dependencies)
@@ -93,7 +93,7 @@ lieplusplus_py/
 ## Documentation
 
 
-Full documentation is available at [https://gitea.lyapunov.local/Swarm-Systems-Lab/lieplusplus_py/blob/main/docs](https://gitea.lyapunov.local/Swarm-Systems-Lab/lieplusplus_py/blob/main/docs)
+Full documentation is available at [https://github.com/Swarm-Systems-Lab/lieplusplus_py/blob/main/docs](https://github.com/Swarm-Systems-Lab/lieplusplus_py/blob/main/docs)
 
 
 **Build locally:**

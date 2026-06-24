@@ -22,7 +22,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [
-    { name = "Jesús Bautista Villar", email = "jesbauti20@gmail.com" }
+    { name = "Jesus Bautista Villar", email = "jesbauti20@gmail.com" }
 ]
 dependencies = [
     "numpy>=1.19",
