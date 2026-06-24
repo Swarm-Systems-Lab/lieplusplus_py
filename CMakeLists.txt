@@ -31,8 +31,8 @@ if(NOT EXISTS ${LPP_INCLUDE_DIR})
     message(STATUS "Lie-plusplus not found, fetching via FetchContent")
     FetchContent_Declare(
         lieplusplus
-        GIT_REPOSITORY https://github.com/jesusBV20/Lie-plusplus.git
-        GIT_TAG main
+        GIT_REPOSITORY https://github.com/aau-cns/Lie-plusplus.git
+        GIT_TAG bea48ea17b6de1397224cfc4d196a8e49eb9250c # main as of 2026-06-24
     )
     FetchContent_MakeAvailable(lieplusplus)
     # Lie-plusplus is header-only; includes will be ${lieplusplus_SOURCE_DIR}/include
