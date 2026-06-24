@@ -89,31 +89,6 @@ lieplusplus_py/
 └── uv.lock                     # Locked dependencies
 ```
 
-
-## Documentation
-
-
-Full documentation is available at [https://github.com/Swarm-Systems-Lab/lieplusplus_py/blob/main/docs](https://github.com/Swarm-Systems-Lab/lieplusplus_py/blob/main/docs)
-
-
-**Build locally:**
-```bash
-just docs        # Start server at http://localhost:8000 with live reload
-just docs-build  # Build static documentation
-```
-
-
-
-
-## Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING.md](docs/contributing.md) for guidelines.
-
-**Before submitting a PR:**
-```bash
-just check-all  # Runs lint, security, test, typecheck, pre-commit
-```
-
 ## License
 
 MIT

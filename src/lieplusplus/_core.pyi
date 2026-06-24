@@ -9,9 +9,9 @@ import typing
 __all__: list[str] = ['LieGroup', 'SE3', 'SE3_2', 'SO3']
 class LieGroup:
     """
-
+    
                 LieGroup - Abstract base class for all Lie groups
-
+    
                 All Lie groups should implement the following methods:
                 - exp(): Exponential map from Lie algebra to Lie group
                 - log(): Logarithmic map from Lie group to Lie algebra
@@ -22,7 +22,7 @@ class LieGroup:
                 - tangent_zero(): Zero element of the Lie algebra
                 - __mul__(): Group composition
                 - __call__(): Convert to matrix representation
-
+            
     """
 class SE3(LieGroup):
     @staticmethod
@@ -371,4 +371,4 @@ class SO3(LieGroup):
         """
         Return quaternion as [w, x, y, z].
         """
-__version__: str = '0.4.2'
+__version__: str = '0.5.2'

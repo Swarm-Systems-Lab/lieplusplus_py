@@ -2,8 +2,18 @@
 
 # Setup the development environment (dev deps only by default)
 setup:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if ! command -v ssl-pydev >/dev/null 2>&1; then
+        uv tool install ssl_pydev
+    fi
+    if ! command -v ssl-pydev >/dev/null 2>&1; then
+        echo "error: ssl-pydev was installed but is not on PATH." >&2
+        echo "check https://github.com/Swarm-Systems-Lab/ssl_pydev#install" >&2
+        exit 1
+    fi
     uv lock
-    ./scripts/ci/setup-env.sh --extras dev,lint,tests,type-checking,pre-commit
+    ssl-pydev setup-env --extras dev,lint,tests,type-checking,pre-commit
 
 # Sync all dependency groups
 sync:
@@ -19,15 +29,15 @@ build:
 
 # Build wheels (cibuildwheel) for release
 build-release:
-    ./scripts/release/build_publish.sh
+    ssl-pydev build-native
 
 # Publish artifacts with uv (requires UV_PUBLISH_* env vars)
 publish:
-    ./scripts/release/publish.sh
+    ssl-pydev publish
 
 # Publish artifacts with twine (CI-friendly; requires TWINE_* env vars)
 publish-ci:
-    ./scripts/release/publish_ci.sh
+    ssl-pydev publish-ci
 
 # Clean build artifacts
 clean:
@@ -95,4 +105,8 @@ clean-docs:
 
 # Validate built documentation
 validate-docs:
-    ./scripts/docs/validate_docs.sh
+    ssl-pydev validate-docs
+
+# Regenerate pybind11 type stubs (run after changing src/bindings.cpp)
+generate-stubs:
+    ssl-pydev generate-stubs --module lieplusplus._core --output src/

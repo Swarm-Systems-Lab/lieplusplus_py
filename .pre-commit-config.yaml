@@ -13,3 +13,13 @@ repos:
       - id: check-yaml
         args: [--unsafe]
       - id: check-added-large-files
+
+  - repo: local
+    hooks:
+      - id: generate-pybind11-stubs
+        name: Regenerate pybind11 stubs (_core.pyi)
+        description: Rebuilds the extension and regenerates src/lieplusplus/_core.pyi whenever the C++ bindings change
+        entry: ssl-pydev generate-stubs --module lieplusplus._core --output src/
+        language: system
+        files: ^(src/bindings\.cpp|CMakeLists\.txt)$
+        pass_filenames: false
