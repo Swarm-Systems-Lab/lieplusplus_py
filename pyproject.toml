@@ -237,10 +237,10 @@ commands = [
 ]
 
 [tool.tox.env.build]
-description = "Build sdist and wheel artifacts"
+description = "Build sdist artifact (wheels are built by cibuildwheel, not here)"
 extras = ["release"]
 commands = [
-    ["python", "-m", "build", "--sdist", "--wheel", "--outdir", "dist"],
+    ["python", "-m", "build", "--sdist", "--outdir", "dist"],
 ]
 
 [tool.tox.env.cibuildwheel]

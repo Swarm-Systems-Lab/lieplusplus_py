@@ -2,7 +2,7 @@
 
 Swarm Systems Lab Python lieplusplus library
 
-⚠️ **Warning:** This project is a work in progress and uses Generative AI for both documentation and code generation.
+⚠️ **Warning:** This project is a work in progress.
 
 ## Installation
 
