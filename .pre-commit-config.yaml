@@ -9,7 +9,9 @@ repos:
     rev: v4.5.0
     hooks:
       - id: trailing-whitespace
+        exclude: '\.pyi$'
       - id: end-of-file-fixer
+        exclude: '\.pyi$'
       - id: check-yaml
         args: [--unsafe]
       - id: check-added-large-files
@@ -20,6 +22,7 @@ repos:
         name: Regenerate pybind11 stubs (_core.pyi)
         description: Rebuilds the extension and regenerates src/lieplusplus/_core.pyi whenever the C++ bindings change
         entry: ssl-pydev generate-stubs --module lieplusplus._core --output src/
+        # bash -c 'if [ -n "${CI:-}" ]; then echo "Skipping in CI"; exit 0; fi;
         language: system
         files: ^(src/bindings\.cpp|CMakeLists\.txt)$
         pass_filenames: false
