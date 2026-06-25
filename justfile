@@ -1,5 +1,9 @@
 # justfile - placed in your project root
 
+# ============================================================================
+# Setup & Environment
+# ============================================================================
+
 # Setup the development environment (dev deps only by default)
 setup:
     #!/usr/bin/env bash
@@ -31,25 +35,9 @@ build:
 build-release:
     ssl-pydev build-native
 
-# Publish artifacts with uv (requires UV_PUBLISH_* env vars)
-publish:
-    ssl-pydev publish
-
-# Publish artifacts with twine (CI-friendly; requires TWINE_* env vars)
-publish-ci:
-    ssl-pydev publish-ci
-
-# Clean build artifacts
-clean:
-    rm -rf build dist src/lieplusplus.egg-info .pytest_cache .ruff_cache __pycache__ .venv site cov.xml .coverage .tox
-
-# Run the basic usage example
-example:
-    uv run python examples/basic_usage.py
-
-# Run pre-commit checks
-pre-commit:
-    uv run pre-commit run --all-files --show-diff-on-failure
+# ============================================================================
+# Development & Code Quality
+# ============================================================================
 
 # Run lint checks
 lint:
@@ -59,6 +47,22 @@ lint:
 # Run type checks
 typecheck:
     uv run ty check src/lieplusplus
+
+# Run pre-commit checks
+pre-commit:
+    uv run pre-commit run --all-files --show-diff-on-failure
+
+# Run security scans
+security:
+    ssl-pydev security
+
+# Regenerate pybind11 type stubs (run after changing src/bindings.cpp)
+generate-stubs:
+    ssl-pydev generate-stubs --module lieplusplus._core --output src/
+
+# ============================================================================
+# Testing
+# ============================================================================
 
 # Run tests (fast, no coverage)
 test:
@@ -70,7 +74,7 @@ test-fast:
 
 # Run specific test
 test-one TEST:
-    uv run pytest tests/ -v -k
+    uv run pytest tests/ -v -k "{{TEST}}"
 
 # Run tests across multiple Python versions
 test-multi-py:
@@ -80,14 +84,21 @@ test-multi-py:
 list:
     uv run tox list
 
-# Test GitHub Actions workflows locally with act
-act:
-    ssl-pydev act
+# ============================================================================
+# Publishing
+# ============================================================================
 
-# Run security scans
-security:
-    ssl-pydev security
+# Publish artifacts with uv (requires UV_PUBLISH_* env vars)
+publish:
+    ssl-pydev publish
 
+# Publish artifacts with twine (CI-friendly; requires TWINE_* env vars)
+publish-ci:
+    ssl-pydev publish-ci
+
+# ============================================================================
+# Documentation
+# ============================================================================
 
 # Start the documentation server (serves while watching for changes)
 docs:
@@ -97,20 +108,83 @@ docs:
 docs-build:
     uv run tox -e docs
 
-
-# Full CI simulation (do this before pushing!)
-check-all: lint security test
-    uv run tox -e type-checking
-    uv run tox -e pre-commit
+# Validate built documentation
+validate-docs:
+    ssl-pydev validate-docs
 
 # Clean documentation build artifacts
 clean-docs:
     rm -rf site
 
-# Validate built documentation
-validate-docs:
-    ssl-pydev validate-docs
+# ============================================================================
+# CI Testing
+# ============================================================================
 
-# Regenerate pybind11 type stubs (run after changing src/bindings.cpp)
-generate-stubs:
-    ssl-pydev generate-stubs --module lieplusplus._core --output src/
+# Test GitHub Actions workflows locally with act
+act:
+    ssl-pydev act
+
+# ============================================================================
+# Examples & Utilities
+# ============================================================================
+
+# Run the basic usage example
+example:
+    uv run python examples/basic_usage.py
+
+# Clean build artifacts
+clean:
+    rm -rf build dist src/lieplusplus.egg-info .pytest_cache .ruff_cache __pycache__ .venv site cov.xml .coverage .tox
+
+# ============================================================================
+# Composite Commands
+# ============================================================================
+
+# Full CI simulation (do this before pushing!)
+check-all: lint security typecheck pre-commit test
+    @echo "All checks passed!"
+
+# Show help information
+help:
+    @echo "lieplusplus_py Development Commands"
+    @echo "===================================="
+    @echo ""
+    @echo "Setup & Environment:"
+    @echo "  just setup          - Install dependencies with uv"
+    @echo "  just sync           - Sync all dependency groups"
+    @echo "  just template-prune - Prune files not in template (after copier update)"
+    @echo "  just build          - Build package in development mode"
+    @echo "  just build-release  - Build cibuildwheel wheels for release"
+    @echo ""
+    @echo "Development & Code Quality:"
+    @echo "  just lint           - Run ruff formatting and linting"
+    @echo "  just typecheck      - Run type checking with ty"
+    @echo "  just pre-commit     - Run pre-commit hooks on all files"
+    @echo "  just security       - Run security scans with semgrep"
+    @echo "  just generate-stubs - Regenerate pybind11 type stubs"
+    @echo ""
+    @echo "Testing:"
+    @echo "  just test           - Run tests (fast, no coverage)"
+    @echo "  just test-fast      - Run tests in parallel, skip slow tests"
+    @echo "  just test-one TEST  - Run specific test by name"
+    @echo "  just test-multi-py  - Run tests across Python 3.12-3.14"
+    @echo "  just list           - List all tox environments"
+    @echo ""
+    @echo "Publishing:"
+    @echo "  just publish        - Publish with uv"
+    @echo "  just publish-ci     - Publish with twine (CI-friendly)"
+    @echo ""
+    @echo "Documentation:"
+    @echo "  just docs           - Start documentation server"
+    @echo "  just docs-build     - Build documentation"
+    @echo "  just validate-docs  - Validate built documentation"
+    @echo "  just clean-docs     - Clean documentation artifacts"
+    @echo ""
+    @echo "CI Testing:"
+    @echo "  just act            - Test GitHub Actions workflows locally with act"
+    @echo ""
+    @echo "Examples & Utilities:"
+    @echo "  just example        - Run the basic usage example"
+    @echo "  just clean          - Clean build and test artifacts"
+    @echo "  just check-all      - Run full CI simulation"
+    @echo "  just help           - Show this help message"
