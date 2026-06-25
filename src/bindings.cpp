@@ -61,7 +61,9 @@ PYBIND11_MODULE(_core, m) {
         // Constructors
         // ---------------------------------------------------------------------
         .def(py::init<>(), "Default constructor (identity rotation)")
-        .def(py::init<const Quaterniond&>(), "Constructor from quaternion", py::arg("q"))
+        .def(py::init([](const Vec4d& q) {
+            return SO3d(Quaterniond(q(0), q(1), q(2), q(3)));
+        }), "Constructor from quaternion [w, x, y, z].", py::arg("q"))
         .def(py::init<const Matrix3d&>(), "Constructor from rotation matrix", py::arg("R"))
         .def(py::init([](const Vec3d& u) {
             return SO3d::exp(u);
@@ -148,8 +150,11 @@ PYBIND11_MODULE(_core, m) {
              py::arg("other"),
              py::return_value_policy::reference_internal)
 
-        .def("fromq", &SO3d::fromq,
-             "Set this rotation from a (normalized) quaternion.",
+        .def("fromq",
+             [](SO3d& self, const Vec4d& q) {
+                 self.fromq(Quaterniond(q(0), q(1), q(2), q(3)));
+             },
+             "Set this rotation from a (normalized) quaternion [w, x, y, z].",
              py::arg("q"),
              py::return_value_policy::reference_internal)
 

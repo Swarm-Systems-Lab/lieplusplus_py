@@ -58,6 +58,29 @@ class TestSO3:
         identity = R1 * R_inv
         np.testing.assert_allclose(identity.asMatrix(), np.eye(3), rtol=1e-10, atol=1e-10)
 
+    def test_quaternion_constructor_identity(self):
+        """SO3([1, 0, 0, 0]) (identity quaternion, [w, x, y, z]) is the identity rotation"""
+        R = lpp.SO3(np.array([1.0, 0.0, 0.0, 0.0]))
+        np.testing.assert_allclose(R.asMatrix(), np.eye(3), rtol=1e-10, atol=1e-10)
+        np.testing.assert_allclose(R.q(), [1.0, 0.0, 0.0, 0.0], rtol=1e-10, atol=1e-10)
+
+    def test_quaternion_constructor_roundtrip(self):
+        """SO3(R.q()) reconstructs the same rotation as R, for a non-trivial rotation"""
+        R = lpp.SO3.random()
+        q = R.q()
+
+        R_from_q = lpp.SO3(q)
+        np.testing.assert_allclose(R_from_q.asMatrix(), R.asMatrix(), rtol=1e-10, atol=1e-10)
+
+    def test_fromq_roundtrip(self):
+        """fromq(R.q()) mutates a rotation in place to match R"""
+        R = lpp.SO3.random()
+        q = R.q()
+
+        R2 = lpp.SO3()
+        R2.fromq(q)
+        np.testing.assert_allclose(R2.asMatrix(), R.asMatrix(), rtol=1e-10, atol=1e-10)
+
 
 class TestSE3:
     """Test cases for SE(3) pose group"""

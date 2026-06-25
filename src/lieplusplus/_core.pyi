@@ -224,12 +224,6 @@ class SO3(LieGroup):
         Gamma2 matrix for SO(3).
         """
     @staticmethod
-    @typing.overload
-    def __init__(*args, **kwargs) -> None:
-        """
-        Constructor from quaternion
-        """
-    @staticmethod
     def adjoint(u: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[3, 1]"]) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[3, 3]"]:
         """
         Adjoint operator for so(3). Returns a 3x3 matrix.
@@ -238,11 +232,6 @@ class SO3(LieGroup):
     def exp(u: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[3, 1]"]) -> SO3:
         """
         Exponential map R^3 -> SO(3).
-        """
-    @staticmethod
-    def fromq(*args, **kwargs) -> None:
-        """
-        Set this rotation from a (normalized) quaternion.
         """
     @staticmethod
     def invLeftJacobian(u: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[3, 1]"]) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[3, 3]"]:
@@ -307,6 +296,11 @@ class SO3(LieGroup):
         Default constructor (identity rotation)
         """
     @typing.overload
+    def __init__(self, q: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[4, 1]"]) -> None:
+        """
+        Constructor from quaternion [w, x, y, z].
+        """
+    @typing.overload
     def __init__(self, R: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[3, 3]"]) -> None:
         """
         Constructor from rotation matrix
@@ -350,6 +344,10 @@ class SO3(LieGroup):
     def fromR(self, R: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[3, 3]"]) -> None:
         """
         Set this rotation from a rotation matrix.
+        """
+    def fromq(self, q: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[4, 1]"]) -> None:
+        """
+        Set this rotation from a (normalized) quaternion [w, x, y, z].
         """
     def inv(self) -> SO3:
         """
