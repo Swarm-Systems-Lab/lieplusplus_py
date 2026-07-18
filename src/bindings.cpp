@@ -9,6 +9,9 @@
 #include <groups/SO3.hpp>
 #include <groups/SEn3.hpp>
 
+// Generic vectorization layer (library-agnostic; see the header)
+#include "pybind_batch.hpp"
+
 namespace py = pybind11;
 
 // Abstract base class for all Lie groups
@@ -391,6 +394,75 @@ PYBIND11_MODULE(_core, m) {
             return "<SE3_2 extended pose>"; // TODO: improve representation
         }
     );
+
+    // =========================================================================
+    // Vectorized operators
+    // -------------------------------------------------------------------------
+    // Same maths as the scalar API above, but crossing the Python/C++ boundary
+    // once per *array* instead of once per element. Add a new one with a single
+    // def_unary/def_binary line -- see the `batch` namespace.
+    // =========================================================================
+    py::module_ bm = m.def_submodule(
+        "batch",
+        "Vectorized Lie-group operators.\n\n"
+        "Every function takes C-contiguous float64 arrays shaped (N, *element) and returns\n"
+        "(N, *element). The maths is identical to the scalar API; only the number of\n"
+        "Python->C++ crossings differs (one per array, not one per entity).");
+
+    // ---- SO(3) --------------------------------------------------------------
+    pybind_batch::def_unary<Vec3d, Matrix3d>(
+        bm, "so3_exp", [](const Vec3d& u) { return SO3d::exp(u).asMatrix(); },
+        "Exponential map, (N,3) -> (N,3,3).");
+    pybind_batch::def_unary<Matrix3d, Vec3d>(
+        bm, "so3_log", [](const Matrix3d& R) { return SO3d::log(SO3d(R)); },
+        "Logarithmic map, (N,3,3) -> (N,3).");
+    pybind_batch::def_unary<Matrix3d, Matrix3d>(
+        bm, "so3_inv", [](const Matrix3d& R) { return SO3d(R).inv().asMatrix(); },
+        "Inverse, (N,3,3) -> (N,3,3).");
+    pybind_batch::def_unary<Vec3d, Matrix3d>(
+        bm, "so3_right_jacobian", [](const Vec3d& u) { return SO3d::rightJacobian(u); },
+        "Right Jacobian, (N,3) -> (N,3,3).");
+    pybind_batch::def_unary<Vec3d, Matrix3d>(
+        bm, "so3_inv_right_jacobian", [](const Vec3d& u) { return SO3d::invRightJacobian(u); },
+        "Inverse right Jacobian, (N,3) -> (N,3,3).");
+
+    pybind_batch::def_binary<Matrix3d, Matrix3d, Matrix3d>(
+        bm, "so3_compose",
+        [](const Matrix3d& a, const Matrix3d& b) { return (SO3d(a) * SO3d(b)).asMatrix(); },
+        "Group composition A*B, (N,3,3) x (N,3,3) -> (N,3,3).");
+    pybind_batch::def_binary<Matrix3d, Vec3d, Matrix3d>(
+        bm, "so3_retract",
+        [](const Matrix3d& R, const Vec3d& u) { return (SO3d(R) * SO3d::exp(u)).asMatrix(); },
+        "Right retraction R*exp(u), (N,3,3) x (N,3) -> (N,3,3). The integration primitive.");
+    pybind_batch::def_binary<Matrix3d, Vec3d, Vec3d>(
+        bm, "so3_rotate", [](const Matrix3d& R, const Vec3d& v) { return Vec3d(R * v); },
+        "Rotate vectors, (N,3,3) x (N,3) -> (N,3).");
+
+    // ---- SE(3) --------------------------------------------------------------
+    pybind_batch::def_unary<Vec6d, Matrix4d>(
+        bm, "se3_exp", [](const Vec6d& u) { return SE3d::exp(u).asMatrix(); },
+        "Exponential map, (N,6) -> (N,4,4).");
+    pybind_batch::def_unary<Matrix4d, Vec6d>(
+        bm, "se3_log", [](const Matrix4d& T) { return SE3d::log(SE3d(T)); },
+        "Logarithmic map, (N,4,4) -> (N,6).");
+    pybind_batch::def_unary<Matrix4d, Matrix4d>(
+        bm, "se3_inv", [](const Matrix4d& T) { return SE3d(T).inv().asMatrix(); },
+        "Inverse pose, (N,4,4) -> (N,4,4).");
+
+    pybind_batch::def_binary<Matrix4d, Matrix4d, Matrix4d>(
+        bm, "se3_compose",
+        [](const Matrix4d& a, const Matrix4d& b) { return (SE3d(a) * SE3d(b)).asMatrix(); },
+        "Group composition A*B, (N,4,4) x (N,4,4) -> (N,4,4).");
+    pybind_batch::def_binary<Matrix4d, Vec6d, Matrix4d>(
+        bm, "se3_retract",
+        [](const Matrix4d& T, const Vec6d& u) { return (SE3d(T) * SE3d::exp(u)).asMatrix(); },
+        "Right retraction T*exp(u), (N,4,4) x (N,6) -> (N,4,4).");
+    pybind_batch::def_binary<Matrix4d, Vec3d, Vec3d>(
+        bm, "se3_transform",
+        [](const Matrix4d& T, const Vec3d& p) {
+            return Vec3d(T.topLeftCorner<3, 3>() * p + T.topRightCorner<3, 1>());
+        },
+        "Apply a pose to points, (N,4,4) x (N,3) -> (N,3). The frame-change primitive.");
 
     // TODO: include more bindings as needed
 }
