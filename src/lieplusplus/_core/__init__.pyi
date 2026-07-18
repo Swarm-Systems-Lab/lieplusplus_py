@@ -370,4 +370,4 @@ class SO3(LieGroup):
         """
         Return quaternion as [w, x, y, z].
         """
-__version__: str = '0.5.2'
+__version__: str = '0.6.1'
