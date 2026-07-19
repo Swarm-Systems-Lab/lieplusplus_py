@@ -144,13 +144,23 @@ py::array make_output(py::ssize_t n, bool single, const py::object& out, const c
 
     if (out.is_none()) return OutArr(shape);
 
-    OutArr provided;
-    try {
-        provided = out.cast<OutArr>();
-    } catch (const py::cast_error&) {
+    // Validate WITHOUT conversion: the pybind array_t caster would silently COPY a
+    // non-contiguous / wrong-dtype array, the kernel would write into the copy, and the
+    // caller's buffer would never change -- an in-place API must refuse instead.
+    if (!py::isinstance<py::array>(out)) {
         throw std::invalid_argument(std::string(op) +
                                     ": 'out' must be a writable C-contiguous float64 array");
     }
+    auto candidate = py::reinterpret_borrow<py::array>(out);
+    const bool c_contiguous = (candidate.flags() & py::array::c_style) != 0;
+    const bool is_double = candidate.dtype().is(py::dtype::of<double>());
+    if (!c_contiguous || !candidate.writeable() || !is_double) {
+        throw std::invalid_argument(
+            std::string(op) +
+            ": 'out' must be a writable C-contiguous float64 array (in-place write is the "
+            "point; converting would silently discard the result)");
+    }
+    OutArr provided = py::reinterpret_borrow<OutArr>(out);  // same buffer, no conversion
     if (provided.ndim() != static_cast<py::ssize_t>(shape.size())) {
         throw std::invalid_argument(std::string(op) + ": 'out' has the wrong rank");
     }

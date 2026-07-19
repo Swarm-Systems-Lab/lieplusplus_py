@@ -111,3 +111,16 @@ def test_non_broadcastable_leading_dims_are_rejected(rng):
 def test_docstrings_document_the_shapes():
     assert "Shapes:" in B.so3_retract.__doc__
     assert "out=" in B.so3_retract.__doc__
+
+
+def test_out_refuses_non_contiguous_buffers_instead_of_silently_copying(rng):
+    """An in-place API must never accept a buffer it cannot actually write into: pybind's
+    array_t caster would CONVERT (copy) an F-ordered array and the result would vanish."""
+    rot, tan = _rots(rng, 4), rng.normal(size=(4, 3)) * 0.1
+    hostile = np.asfortranarray(np.zeros((4, 3, 3)))
+    with pytest.raises(ValueError, match="C-contiguous"):
+        B.so3_retract(rot, tan, out=hostile)
+    read_only = np.zeros((4, 3, 3))
+    read_only.setflags(write=False)
+    with pytest.raises(ValueError, match="writable|C-contiguous"):
+        B.so3_retract(rot, tan, out=read_only)
