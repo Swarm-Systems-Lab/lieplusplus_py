@@ -211,6 +211,21 @@ PYBIND11_MODULE(_core, m) {
              py::return_value_policy::copy)
 
         // ---------------------------------------------------------------------
+        // NumPy interop
+        // ---------------------------------------------------------------------
+        .def("__array__",
+            [](const SO3d& self, py::object dtype, py::object copy) -> py::object {
+                if (!copy.is_none() && !copy.cast<bool>())
+                    throw py::value_error("SO3 holds no numpy buffer to share; copy=False "
+                                          "cannot be honoured.");
+                py::object arr = py::cast(self.asMatrix());
+                return dtype.is_none() ? arr : arr.attr("astype")(dtype);
+            },
+            py::arg("dtype") = py::none(), py::arg("copy") = py::none(),
+            "NumPy interop: np.asarray(R) is the 3x3 matrix, and the array operators "
+            "(so3_log, so3_compose, ...) accept the object itself.")
+
+        // ---------------------------------------------------------------------
         // __repr__
         // ---------------------------------------------------------------------
         .def("__repr__", [](const SO3d& self) {
@@ -310,6 +325,21 @@ PYBIND11_MODULE(_core, m) {
              py::return_value_policy::copy)
 
         // ---------------------------------------------------------------------
+        // NumPy interop
+        // ---------------------------------------------------------------------
+        .def("__array__",
+            [](const SE3d& self, py::object dtype, py::object copy) -> py::object {
+                if (!copy.is_none() && !copy.cast<bool>())
+                    throw py::value_error("SE3 holds no numpy buffer to share; copy=False "
+                                          "cannot be honoured.");
+                py::object arr = py::cast(self.asMatrix());
+                return dtype.is_none() ? arr : arr.attr("astype")(dtype);
+            },
+            py::arg("dtype") = py::none(), py::arg("copy") = py::none(),
+            "NumPy interop: np.asarray(T) is the 4x4 matrix, and the array operators "
+            "(se3_log, se3_transform, ...) accept the object itself.")
+
+        // ---------------------------------------------------------------------
         // __repr__
         // ---------------------------------------------------------------------
         .def("__repr__", [](const SE3d& self){
@@ -388,6 +418,20 @@ PYBIND11_MODULE(_core, m) {
              py::return_value_policy::copy)
 
         // ---------------------------------------------------------------------
+        // NumPy interop
+        // ---------------------------------------------------------------------
+        .def("__array__",
+            [](const SE3d_2& self, py::object dtype, py::object copy) -> py::object {
+                if (!copy.is_none() && !copy.cast<bool>())
+                    throw py::value_error("SE3_2 holds no numpy buffer to share; copy=False "
+                                          "cannot be honoured.");
+                py::object arr = py::cast(self.asMatrix());
+                return dtype.is_none() ? arr : arr.attr("astype")(dtype);
+            },
+            py::arg("dtype") = py::none(), py::arg("copy") = py::none(),
+            "NumPy interop: np.asarray(X) is the 5x5 matrix.")
+
+        // ---------------------------------------------------------------------
         // __repr__
         // ---------------------------------------------------------------------
         .def("__repr__", [](const SE3d_2& self){
@@ -396,73 +440,70 @@ PYBIND11_MODULE(_core, m) {
     );
 
     // =========================================================================
-    // Vectorized operators
+    // Array operators
     // -------------------------------------------------------------------------
-    // Same maths as the scalar API above, but crossing the Python/C++ boundary
-    // once per *array* instead of once per element. Add a new one with a single
-    // def_unary/def_binary line -- see the `batch` namespace.
+    // The same maths as the class API above, exposed as plain functions on plain
+    // numpy arrays. Each one is shape-polymorphic: hand it one element or a stack
+    // of a million and the return matches, so there is no "batch" variant to pick
+    // and nothing to convert beforehand. The Python/C++ boundary is crossed once
+    // per *call*, not once per entity. Add an operator with a single
+    // def_unary/def_binary line -- see pybind_batch.hpp.
     // =========================================================================
-    py::module_ bm = m.def_submodule(
-        "batch",
-        "Vectorized Lie-group operators.\n\n"
-        "Every function takes C-contiguous float64 arrays shaped (N, *element) and returns\n"
-        "(N, *element). The maths is identical to the scalar API; only the number of\n"
-        "Python->C++ crossings differs (one per array, not one per entity).");
 
     // ---- SO(3) --------------------------------------------------------------
     pybind_batch::def_unary<Vec3d, Matrix3d>(
-        bm, "so3_exp", [](const Vec3d& u) { return SO3d::exp(u).asMatrix(); },
-        "Exponential map, (N,3) -> (N,3,3).");
+        m, "so3_exp", [](const Vec3d& u) { return SO3d::exp(u).asMatrix(); },
+        "Exponential map: rotation vectors -> rotation matrices.");
     pybind_batch::def_unary<Matrix3d, Vec3d>(
-        bm, "so3_log", [](const Matrix3d& R) { return SO3d::log(SO3d(R)); },
-        "Logarithmic map, (N,3,3) -> (N,3).");
+        m, "so3_log", [](const Matrix3d& R) { return SO3d::log(SO3d(R)); },
+        "Logarithmic map: rotation matrices -> rotation vectors.");
     pybind_batch::def_unary<Matrix3d, Matrix3d>(
-        bm, "so3_inv", [](const Matrix3d& R) { return SO3d(R).inv().asMatrix(); },
-        "Inverse, (N,3,3) -> (N,3,3).");
+        m, "so3_inv", [](const Matrix3d& R) { return SO3d(R).inv().asMatrix(); },
+        "Inverse rotation.");
     pybind_batch::def_unary<Vec3d, Matrix3d>(
-        bm, "so3_right_jacobian", [](const Vec3d& u) { return SO3d::rightJacobian(u); },
-        "Right Jacobian, (N,3) -> (N,3,3).");
+        m, "so3_right_jacobian", [](const Vec3d& u) { return SO3d::rightJacobian(u); },
+        "Right Jacobian.");
     pybind_batch::def_unary<Vec3d, Matrix3d>(
-        bm, "so3_inv_right_jacobian", [](const Vec3d& u) { return SO3d::invRightJacobian(u); },
-        "Inverse right Jacobian, (N,3) -> (N,3,3).");
+        m, "so3_inv_right_jacobian", [](const Vec3d& u) { return SO3d::invRightJacobian(u); },
+        "Inverse right Jacobian.");
 
     pybind_batch::def_binary<Matrix3d, Matrix3d, Matrix3d>(
-        bm, "so3_compose",
+        m, "so3_compose",
         [](const Matrix3d& a, const Matrix3d& b) { return (SO3d(a) * SO3d(b)).asMatrix(); },
-        "Group composition A*B, (N,3,3) x (N,3,3) -> (N,3,3).");
+        "Group composition A*B.");
     pybind_batch::def_binary<Matrix3d, Vec3d, Matrix3d>(
-        bm, "so3_retract",
+        m, "so3_retract",
         [](const Matrix3d& R, const Vec3d& u) { return (SO3d(R) * SO3d::exp(u)).asMatrix(); },
-        "Right retraction R*exp(u), (N,3,3) x (N,3) -> (N,3,3). The integration primitive.");
+        "Right retraction R*exp(u). The attitude-integration primitive.");
     pybind_batch::def_binary<Matrix3d, Vec3d, Vec3d>(
-        bm, "so3_rotate", [](const Matrix3d& R, const Vec3d& v) { return Vec3d(R * v); },
-        "Rotate vectors, (N,3,3) x (N,3) -> (N,3).");
+        m, "so3_rotate", [](const Matrix3d& R, const Vec3d& v) { return Vec3d(R * v); },
+        "Rotate vectors by rotations.");
 
     // ---- SE(3) --------------------------------------------------------------
     pybind_batch::def_unary<Vec6d, Matrix4d>(
-        bm, "se3_exp", [](const Vec6d& u) { return SE3d::exp(u).asMatrix(); },
-        "Exponential map, (N,6) -> (N,4,4).");
+        m, "se3_exp", [](const Vec6d& u) { return SE3d::exp(u).asMatrix(); },
+        "Exponential map: twists -> homogeneous poses.");
     pybind_batch::def_unary<Matrix4d, Vec6d>(
-        bm, "se3_log", [](const Matrix4d& T) { return SE3d::log(SE3d(T)); },
-        "Logarithmic map, (N,4,4) -> (N,6).");
+        m, "se3_log", [](const Matrix4d& T) { return SE3d::log(SE3d(T)); },
+        "Logarithmic map: homogeneous poses -> twists.");
     pybind_batch::def_unary<Matrix4d, Matrix4d>(
-        bm, "se3_inv", [](const Matrix4d& T) { return SE3d(T).inv().asMatrix(); },
-        "Inverse pose, (N,4,4) -> (N,4,4).");
+        m, "se3_inv", [](const Matrix4d& T) { return SE3d(T).inv().asMatrix(); },
+        "Inverse pose.");
 
     pybind_batch::def_binary<Matrix4d, Matrix4d, Matrix4d>(
-        bm, "se3_compose",
+        m, "se3_compose",
         [](const Matrix4d& a, const Matrix4d& b) { return (SE3d(a) * SE3d(b)).asMatrix(); },
-        "Group composition A*B, (N,4,4) x (N,4,4) -> (N,4,4).");
+        "Group composition A*B.");
     pybind_batch::def_binary<Matrix4d, Vec6d, Matrix4d>(
-        bm, "se3_retract",
+        m, "se3_retract",
         [](const Matrix4d& T, const Vec6d& u) { return (SE3d(T) * SE3d::exp(u)).asMatrix(); },
-        "Right retraction T*exp(u), (N,4,4) x (N,6) -> (N,4,4).");
+        "Right retraction T*exp(u). The pose-integration primitive.");
     pybind_batch::def_binary<Matrix4d, Vec3d, Vec3d>(
-        bm, "se3_transform",
+        m, "se3_transform",
         [](const Matrix4d& T, const Vec3d& p) {
             return Vec3d(T.topLeftCorner<3, 3>() * p + T.topRightCorner<3, 1>());
         },
-        "Apply a pose to points, (N,4,4) x (N,3) -> (N,3). The frame-change primitive.");
+        "Apply poses to points. The frame-change primitive.");
 
     // TODO: include more bindings as needed
 }

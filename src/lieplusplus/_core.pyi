@@ -6,7 +6,7 @@ import collections.abc
 import numpy
 import numpy.typing
 import typing
-__all__: list[str] = ['LieGroup', 'SE3', 'SE3_2', 'SO3']
+__all__: list[str] = ['LieGroup', 'SE3', 'SE3_2', 'SO3', 'se3_compose', 'se3_exp', 'se3_inv', 'se3_log', 'se3_retract', 'se3_transform', 'so3_compose', 'so3_exp', 'so3_inv', 'so3_inv_right_jacobian', 'so3_log', 'so3_retract', 'so3_right_jacobian', 'so3_rotate']
 class LieGroup:
     """
     
@@ -62,6 +62,10 @@ class SE3(LieGroup):
     def R(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[3, 3]"]:
         """
         Return rotation part
+        """
+    def __array__(self, dtype: typing.Any = None, copy: typing.Any = None) -> typing.Any:
+        """
+        NumPy interop: np.asarray(T) is the 4x4 matrix, and the array operators (se3_log, se3_transform, ...) accept the object itself.
         """
     def __call__(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[4, 4]"]:
         """
@@ -167,6 +171,10 @@ class SE3_2(LieGroup):
     def R(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[3, 3]"]:
         """
         Return rotation part
+        """
+    def __array__(self, dtype: typing.Any = None, copy: typing.Any = None) -> typing.Any:
+        """
+        NumPy interop: np.asarray(X) is the 5x5 matrix.
         """
     def __call__(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[5, 5]"]:
         """
@@ -286,6 +294,10 @@ class SO3(LieGroup):
         """
         Return the rotation matrix (3x3).
         """
+    def __array__(self, dtype: typing.Any = None, copy: typing.Any = None) -> typing.Any:
+        """
+        NumPy interop: np.asarray(R) is the 3x3 matrix, and the array operators (so3_log, so3_compose, ...) accept the object itself.
+        """
     def __call__(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[3, 3]"]:
         """
         Call operator to get the rotation matrix (3x3).
@@ -369,4 +381,116 @@ class SO3(LieGroup):
         """
         Return quaternion as [w, x, y, z].
         """
-__version__: str = '0.5.2'
+def se3_compose(x: typing.Annotated[numpy.typing.ArrayLike, numpy.float64], y: typing.Annotated[numpy.typing.ArrayLike, numpy.float64], out: typing.Any = None) -> numpy.ndarray:
+    """
+    Group composition A*B.
+    
+    Shapes: (4, 4) or (N, 4, 4) x (4, 4) or (N, 4, 4) -> (4, 4) or (N, 4, 4)
+    Pass one element or a stack; the result matches, and any layout or dtype is accepted.
+    `out=` writes into an array you already own.
+    """
+def se3_exp(x: typing.Annotated[numpy.typing.ArrayLike, numpy.float64], out: typing.Any = None) -> numpy.ndarray:
+    """
+    Exponential map: twists -> homogeneous poses.
+    
+    Shapes: (6) or (N, 6) -> (4, 4) or (N, 4, 4)
+    Pass one element or a stack; the result matches, and any layout or dtype is accepted.
+    `out=` writes into an array you already own.
+    """
+def se3_inv(x: typing.Annotated[numpy.typing.ArrayLike, numpy.float64], out: typing.Any = None) -> numpy.ndarray:
+    """
+    Inverse pose.
+    
+    Shapes: (4, 4) or (N, 4, 4) -> (4, 4) or (N, 4, 4)
+    Pass one element or a stack; the result matches, and any layout or dtype is accepted.
+    `out=` writes into an array you already own.
+    """
+def se3_log(x: typing.Annotated[numpy.typing.ArrayLike, numpy.float64], out: typing.Any = None) -> numpy.ndarray:
+    """
+    Logarithmic map: homogeneous poses -> twists.
+    
+    Shapes: (4, 4) or (N, 4, 4) -> (6) or (N, 6)
+    Pass one element or a stack; the result matches, and any layout or dtype is accepted.
+    `out=` writes into an array you already own.
+    """
+def se3_retract(x: typing.Annotated[numpy.typing.ArrayLike, numpy.float64], y: typing.Annotated[numpy.typing.ArrayLike, numpy.float64], out: typing.Any = None) -> numpy.ndarray:
+    """
+    Right retraction T*exp(u). The pose-integration primitive.
+    
+    Shapes: (4, 4) or (N, 4, 4) x (6) or (N, 6) -> (4, 4) or (N, 4, 4)
+    Pass one element or a stack; the result matches, and any layout or dtype is accepted.
+    `out=` writes into an array you already own.
+    """
+def se3_transform(x: typing.Annotated[numpy.typing.ArrayLike, numpy.float64], y: typing.Annotated[numpy.typing.ArrayLike, numpy.float64], out: typing.Any = None) -> numpy.ndarray:
+    """
+    Apply poses to points. The frame-change primitive.
+    
+    Shapes: (4, 4) or (N, 4, 4) x (3) or (N, 3) -> (3) or (N, 3)
+    Pass one element or a stack; the result matches, and any layout or dtype is accepted.
+    `out=` writes into an array you already own.
+    """
+def so3_compose(x: typing.Annotated[numpy.typing.ArrayLike, numpy.float64], y: typing.Annotated[numpy.typing.ArrayLike, numpy.float64], out: typing.Any = None) -> numpy.ndarray:
+    """
+    Group composition A*B.
+    
+    Shapes: (3, 3) or (N, 3, 3) x (3, 3) or (N, 3, 3) -> (3, 3) or (N, 3, 3)
+    Pass one element or a stack; the result matches, and any layout or dtype is accepted.
+    `out=` writes into an array you already own.
+    """
+def so3_exp(x: typing.Annotated[numpy.typing.ArrayLike, numpy.float64], out: typing.Any = None) -> numpy.ndarray:
+    """
+    Exponential map: rotation vectors -> rotation matrices.
+    
+    Shapes: (3) or (N, 3) -> (3, 3) or (N, 3, 3)
+    Pass one element or a stack; the result matches, and any layout or dtype is accepted.
+    `out=` writes into an array you already own.
+    """
+def so3_inv(x: typing.Annotated[numpy.typing.ArrayLike, numpy.float64], out: typing.Any = None) -> numpy.ndarray:
+    """
+    Inverse rotation.
+    
+    Shapes: (3, 3) or (N, 3, 3) -> (3, 3) or (N, 3, 3)
+    Pass one element or a stack; the result matches, and any layout or dtype is accepted.
+    `out=` writes into an array you already own.
+    """
+def so3_inv_right_jacobian(x: typing.Annotated[numpy.typing.ArrayLike, numpy.float64], out: typing.Any = None) -> numpy.ndarray:
+    """
+    Inverse right Jacobian.
+    
+    Shapes: (3) or (N, 3) -> (3, 3) or (N, 3, 3)
+    Pass one element or a stack; the result matches, and any layout or dtype is accepted.
+    `out=` writes into an array you already own.
+    """
+def so3_log(x: typing.Annotated[numpy.typing.ArrayLike, numpy.float64], out: typing.Any = None) -> numpy.ndarray:
+    """
+    Logarithmic map: rotation matrices -> rotation vectors.
+    
+    Shapes: (3, 3) or (N, 3, 3) -> (3) or (N, 3)
+    Pass one element or a stack; the result matches, and any layout or dtype is accepted.
+    `out=` writes into an array you already own.
+    """
+def so3_retract(x: typing.Annotated[numpy.typing.ArrayLike, numpy.float64], y: typing.Annotated[numpy.typing.ArrayLike, numpy.float64], out: typing.Any = None) -> numpy.ndarray:
+    """
+    Right retraction R*exp(u). The attitude-integration primitive.
+    
+    Shapes: (3, 3) or (N, 3, 3) x (3) or (N, 3) -> (3, 3) or (N, 3, 3)
+    Pass one element or a stack; the result matches, and any layout or dtype is accepted.
+    `out=` writes into an array you already own.
+    """
+def so3_right_jacobian(x: typing.Annotated[numpy.typing.ArrayLike, numpy.float64], out: typing.Any = None) -> numpy.ndarray:
+    """
+    Right Jacobian.
+    
+    Shapes: (3) or (N, 3) -> (3, 3) or (N, 3, 3)
+    Pass one element or a stack; the result matches, and any layout or dtype is accepted.
+    `out=` writes into an array you already own.
+    """
+def so3_rotate(x: typing.Annotated[numpy.typing.ArrayLike, numpy.float64], y: typing.Annotated[numpy.typing.ArrayLike, numpy.float64], out: typing.Any = None) -> numpy.ndarray:
+    """
+    Rotate vectors by rotations.
+    
+    Shapes: (3, 3) or (N, 3, 3) x (3) or (N, 3) -> (3) or (N, 3)
+    Pass one element or a stack; the result matches, and any layout or dtype is accepted.
+    `out=` writes into an array you already own.
+    """
+__version__: str = '0.7.0'

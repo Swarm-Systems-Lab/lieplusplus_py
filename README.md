@@ -114,39 +114,49 @@ X.v()           # Velocity vector
 X.p()           # Position vector
 ```
 
-## Vectorized operators (`batch`)
+## Array operators
 
-The group classes above are **single-element by design**: the algebra of one robot rarely needs
-vectorization. Calling them from Python in a loop is dominated not by the arithmetic (tens of
-nanoseconds) but by the pybind boundary crossing (~1-1.5 us per call), which a loop over `N`
-entities pays `N` times.
+The group classes above are **object-oriented and single-element by design**: the algebra of one
+robot rarely needs vectorization. Calling them from Python in a loop is dominated not by the
+arithmetic (tens of nanoseconds) but by the pybind boundary crossing (~1-1.5 us per call), which a
+loop over `N` entities pays `N` times.
 
-`lieplusplus._core.batch` runs the same kernels, crossing once per **array**:
+So the same maths is also exposed as **plain functions on numpy arrays**, crossing into C++ once
+per *call*:
 
 ```python
 import numpy as np
-from lieplusplus._core import batch as B
+import lieplusplus as lpp
 
 xi = np.random.normal(size=(1000, 3)) * 0.01
-R = B.so3_exp(xi)                 # (1000, 3, 3)
-R = B.so3_retract(R, xi)          # R * exp(xi), the integration primitive
+R = lpp.so3_exp(xi)                 # (1000, 3, 3)
+R = lpp.so3_retract(R, xi)          # R * exp(xi), the integration primitive
 ```
 
-Measured on SO(3) retraction: **~3 us/entity for a Python loop vs ~0.04 us/entity batched**
-(~68x at N=1000), and faster than an equivalent vectorized NumPy implementation, since the C++
-loop materializes no temporaries.
+Measured on SO(3) retraction: **~3 us/entity for a Python loop vs ~0.04 us/entity** (~68x at
+N=1000), and faster than an equivalent vectorized NumPy implementation, since the C++ loop
+materializes no temporaries.
 
-### What the batch API gives you
+### One function, any input
+
+There is **no separate batch API to choose**. Each operator is shape-polymorphic, and takes
+whatever array you happen to have:
 
 ```python
-B.so3_exp(v)                      # (3,)     -> (3, 3)      shape polymorphic:
-B.so3_exp(v_stack)                # (N, 3)   -> (N, 3, 3)   one element or a stack
+lpp.so3_exp(v)                          # (3,)     -> (3, 3)      one element
+lpp.so3_exp(v_stack)                    # (N, 3)   -> (N, 3, 3)   or a stack
 
-B.so3_retract(one_R, tangents)    # (3,3) x (N,3) -> (N,3,3)   leading axis broadcasts N vs 1
-B.so3_retract(R, tangents, out=R) # writes in place, allocating nothing
+lpp.so3_retract(one_R, tangents)        # (3,3) x (N,3) -> (N,3,3)   leading axis broadcasts N vs 1
+lpp.so3_retract(R, tangents, out=R)     # writes in place, allocating nothing
 
-B.so3_exp(fortran_or_float32_or_list)   # any layout/dtype converts automatically
+lpp.so3_exp(fortran_or_float32_or_list) # any layout/dtype converts - no ascontiguousarray needed
+lpp.so3_log(SO3.random())               # group objects work too (via __array__)
 ```
+
+`out=` accepts **any writable array of the right shape**. A C-contiguous float64 buffer is written
+directly (zero copy - the fast path an integrator wants); anything else (an F-ordered array, a
+slice, a float32 buffer) goes through a temporary and is copied back, so the result always lands
+in your array. It is never silently discarded.
 
 Shape errors name the operator and the argument:
 
@@ -157,29 +167,29 @@ so3_retract: leading dimensions do not broadcast, got 4 and 3
 
 ### Available operators
 
-| SO(3) | shapes |
+| SO(3) | shapes (one element, or `N` of them) |
 |---|---|
-| `so3_exp` / `so3_log` | `(N,3) -> (N,3,3)` / `(N,3,3) -> (N,3)` |
-| `so3_inv` | `(N,3,3) -> (N,3,3)` |
-| `so3_compose` | `(N,3,3) x (N,3,3) -> (N,3,3)` |
-| `so3_retract` | `(N,3,3) x (N,3) -> (N,3,3)` |
-| `so3_rotate` | `(N,3,3) x (N,3) -> (N,3)` |
-| `so3_right_jacobian` / `so3_inv_right_jacobian` | `(N,3) -> (N,3,3)` |
+| `so3_exp` / `so3_log` | `(3,) -> (3,3)` / `(3,3) -> (3,)` |
+| `so3_inv` | `(3,3) -> (3,3)` |
+| `so3_compose` | `(3,3) x (3,3) -> (3,3)` |
+| `so3_retract` | `(3,3) x (3,) -> (3,3)` |
+| `so3_rotate` | `(3,3) x (3,) -> (3,)` |
+| `so3_right_jacobian` / `so3_inv_right_jacobian` | `(3,) -> (3,3)` |
 
-| SE(3) | shapes |
+| SE(3) | shapes (one element, or `N` of them) |
 |---|---|
-| `se3_exp` / `se3_log` | `(N,6) -> (N,4,4)` / `(N,4,4) -> (N,6)` |
-| `se3_inv` | `(N,4,4) -> (N,4,4)` |
-| `se3_compose` | `(N,4,4) x (N,4,4) -> (N,4,4)` |
-| `se3_retract` | `(N,4,4) x (N,6) -> (N,4,4)` |
-| `se3_transform` | `(N,4,4) x (N,3) -> (N,3)` |
+| `se3_exp` / `se3_log` | `(6,) -> (4,4)` / `(4,4) -> (6,)` |
+| `se3_inv` | `(4,4) -> (4,4)` |
+| `se3_compose` | `(4,4) x (4,4) -> (4,4)` |
+| `se3_retract` | `(4,4) x (6,) -> (4,4)` |
+| `se3_transform` | `(4,4) x (3,) -> (3,)` |
 
-### Vectorizing a new operator
+### Adding an operator
 
 The machinery lives in `src/pybind_batch.hpp` and is **library-agnostic** - it only assumes
-fixed-size Eigen types in and out, so it can be dropped into any pybind11 project. Adding a
-vectorized operator is one line; shape checking, broadcasting, `out=`, layout conversion and error
-messages come for free:
+fixed-size Eigen types in and out, so it can be dropped into any pybind11 project. Adding an
+operator is one line; shape checking, broadcasting, `out=`, layout conversion and error messages
+come for free:
 
 ```cpp
 namespace pb = pybind_batch;
@@ -192,11 +202,15 @@ pb::def_binary<Matrix3d, Vec3d, Matrix3d>(m, "so3_retract",
     "Right retraction R*exp(u).");
 ```
 
-The element types determine the array shapes: `Vec3d` means `(N, 3)`, `Matrix4d` means `(N, 4, 4)`.
+The element types determine the array shapes: `Vec3d` means `(3,)` or `(N, 3)`, `Matrix4d` means
+`(4, 4)` or `(N, 4, 4)`.
 
-> **Note.** `batch` is a separate namespace from the scalar API on purpose. `SO3.exp` already
-> accepts `(3,)` *and* `(3,1)` column vectors, so merging the two would make `(3,1)` ambiguous with
-> a batch of 3. Keeping them apart lets `batch` dispatch unambiguously on `ndim`.
+> **Note.** The array operators are free functions (`lpp.so3_exp`) rather than methods on the
+> classes (`SO3.exp`) because the two have different contracts. `SO3.exp` accepts a `(3,)` vector
+> *and* a `(3,1)` column - convenient for one element, but `(3,1)` would be ambiguous with a stack
+> of 3 under batching. The free functions are strict about rank instead, which is what lets a
+> single name serve one element and a million.
+
 
 ## License
 

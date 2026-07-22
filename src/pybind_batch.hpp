@@ -17,8 +17,11 @@
 //   * shape polymorphism -- pass one element or a stack; the return matches
 //   * leading-axis broadcasting -- pair N with 1 (a shared pose against many points)
 //   * layout/dtype freedom -- non-contiguous views, Fortran order, float32 and lists all convert
-//   * an `out=` parameter -- write into an existing array, allocating nothing
+//   * an `out=` parameter -- write into an existing array, allocating nothing on the fast path
 //   * shape errors naming the operator and the argument
+//
+// There is deliberately no separate "batch" namespace: one operator handles one element or a
+// million, so callers never pick a variant and never pre-convert their arrays.
 
 #pragma once
 
@@ -34,8 +37,8 @@ namespace pybind_batch {
 
 namespace py = pybind11;
 
-// Inputs accept anything convertible; `out` must already be a writable C-contiguous float64
-// array, since silently copying it would defeat the point of passing it.
+// Inputs accept anything convertible (the caster copies when it must). `out` is handled by
+// `make_sink` below, which never lets a conversion swallow the result.
 using InArr = py::array_t<double, py::array::c_style | py::array::forcecast>;
 using OutArr = py::array_t<double, py::array::c_style>;
 
@@ -136,50 +139,67 @@ inline py::ssize_t broadcast(py::ssize_t a, py::ssize_t b, const char* op) {
 }
 
 // -- output allocation ----------------------------------------------------------------------------
+// Where the kernel writes, plus where that has to end up. The subtlety `out=` hides: pybind's
+// array_t caster silently COPIES an array whose layout or dtype does not match, so a kernel
+// writing "in place" through the caster would fill a temporary and leave the caller's buffer
+// untouched -- a silent no-op. So `buffer` is always a contiguous float64 array we own or borrow,
+// and when it had to be a temporary, `writeback` names the array to copy it into afterwards.
+struct Sink {
+    py::array buffer;      // contiguous float64 -- what the kernel writes into
+    py::object writeback;  // the caller's array when `buffer` is a temporary, else none
+};
+
 template <typename Out>
-py::array make_output(py::ssize_t n, bool single, const py::object& out, const char* op) {
+Sink make_sink(py::ssize_t n, bool single, const py::object& out, const char* op) {
     std::vector<py::ssize_t> shape;
     if (!single) shape.push_back(n);
     for (auto d : Elem<Out>::dims()) shape.push_back(d);
 
-    if (out.is_none()) return OutArr(shape);
+    if (out.is_none()) return {OutArr(shape), py::none()};
 
-    // Validate WITHOUT conversion: the pybind array_t caster would silently COPY a
-    // non-contiguous / wrong-dtype array, the kernel would write into the copy, and the
-    // caller's buffer would never change -- an in-place API must refuse instead.
     if (!py::isinstance<py::array>(out)) {
-        throw std::invalid_argument(std::string(op) +
-                                    ": 'out' must be a writable C-contiguous float64 array");
+        throw std::invalid_argument(std::string(op) + ": 'out' must be a writable numpy array");
     }
-    auto candidate = py::reinterpret_borrow<py::array>(out);
-    const bool c_contiguous = (candidate.flags() & py::array::c_style) != 0;
-    const bool is_double = candidate.dtype().is(py::dtype::of<double>());
-    if (!c_contiguous || !candidate.writeable() || !is_double) {
-        throw std::invalid_argument(
-            std::string(op) +
-            ": 'out' must be a writable C-contiguous float64 array (in-place write is the "
-            "point; converting would silently discard the result)");
-    }
-    OutArr provided = py::reinterpret_borrow<OutArr>(out);  // same buffer, no conversion
-    if (provided.ndim() != static_cast<py::ssize_t>(shape.size())) {
+    auto given = py::reinterpret_borrow<py::array>(out);  // borrow: never converts
+
+    if (given.ndim() != static_cast<py::ssize_t>(shape.size())) {
         throw std::invalid_argument(std::string(op) + ": 'out' has the wrong rank");
     }
     for (size_t k = 0; k < shape.size(); ++k) {
-        if (provided.shape(k) != shape[k]) {
+        if (given.shape(k) != shape[k]) {
             throw std::invalid_argument(std::string(op) + ": 'out' has the wrong shape");
         }
     }
-    return provided;
+    if (!given.writeable()) {
+        throw std::invalid_argument(std::string(op) + ": 'out' is read-only");
+    }
+
+    // Fast path: write straight into the caller's memory, allocating nothing.
+    const bool direct = (given.flags() & py::array::c_style) && given.dtype().is(py::dtype::of<double>());
+    if (direct) return {py::reinterpret_borrow<OutArr>(out), py::none()};
+
+    // Slow path: an F-ordered view, a slice, a float32 buffer. Still honoured -- compute into a
+    // temporary and copy back, so the caller's array really does hold the result.
+    return {OutArr(shape), out};
+}
+
+// Deliver the result: hand back the caller's own array when a writeback is pending.
+inline py::array deliver(Sink& sink) {
+    if (sink.writeback.is_none()) return sink.buffer;
+    // np.copyto handles the strides and the dtype cast, and raises numpy's own error if the
+    // cast would lose data (e.g. a float result into an integer buffer).
+    py::module_::import("numpy").attr("copyto")(sink.writeback, sink.buffer);
+    return py::reinterpret_borrow<py::array>(sink.writeback);
 }
 
 // -- the maps -------------------------------------------------------------------------------------
 template <typename In, typename Out, typename F>
 py::array map_unary(const InArr& x, const py::object& out, const F& f, const char* op) {
     const auto a = inspect<In>(x, op, "x");
-    py::array result = make_output<Out>(a.count, !a.batched, out, op);
-    double* dst = static_cast<double*>(result.mutable_data());
+    Sink sink = make_sink<Out>(a.count, !a.batched, out, op);
+    double* dst = static_cast<double*>(sink.buffer.mutable_data());
     for (py::ssize_t i = 0; i < a.count; ++i) write<Out>(dst, i, f(read<In>(a.data, a.at(i))));
-    return result;
+    return deliver(sink);
 }
 
 template <typename A, typename B, typename Out, typename F>
@@ -190,17 +210,18 @@ py::array map_binary(const InArr& x, const InArr& y, const py::object& out, cons
     const py::ssize_t n = broadcast(a.count, b.count, op);
     const bool single = !a.batched && !b.batched;
 
-    py::array result = make_output<Out>(n, single, out, op);
-    double* dst = static_cast<double*>(result.mutable_data());
+    Sink sink = make_sink<Out>(n, single, out, op);
+    double* dst = static_cast<double*>(sink.buffer.mutable_data());
     for (py::ssize_t i = 0; i < n; ++i)
         write<Out>(dst, i, f(read<A>(a.data, a.at(i)), read<B>(b.data, b.at(i))));
-    return result;
+    return deliver(sink);
 }
 
 // -- registration (one line per vectorized operator) ----------------------------------------------
 inline std::string doc_with_shapes(const char* doc, const std::string& in, const std::string& out) {
     return std::string(doc) + "\n\nShapes: " + in + " -> " + out +
-           "\nPass one element or a stack; the result matches. `out=` writes in place.";
+           "\nPass one element or a stack; the result matches, and any layout or dtype is "
+           "accepted.\n`out=` writes into an array you already own.";
 }
 
 template <typename In, typename Out, typename F>
